@@ -12,7 +12,7 @@ trait HasSlug
     /**
      * Get the attribute name to create the slug from.
      */
-    abstract public function getSlugKeyName(): string;
+    abstract public function getSlugifyKeyName(): string;
 
     /**
      * Create a slug from the given attribute.
@@ -23,7 +23,7 @@ trait HasSlug
             return;
         }
 
-        $saveSlugFrom = $this->getSlugKeyName();
+        $saveSlugFrom = $this->getSlugifyKeyName();
         $saveSlugTo = $this->getRouteKeyName();
 
         // Only update slug when the source attribute is dirty.
@@ -73,7 +73,7 @@ trait HasSlug
      */
     public function isSluggable(): bool
     {
-        return $this->getRouteKeyName() !== $this->getKeyName() && $this->hasAttribute($this->getSlugKeyName());
+        return $this->getRouteKeyName() !== $this->getKeyName() && $this->hasAttribute($this->getSlugifyKeyName());
     }
 
     /**

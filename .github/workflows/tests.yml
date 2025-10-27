@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  pull_request
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          php-version: '8.4'
+
+      - name: Install Dependencies
+        run: composer install -q --no-interaction
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+        run: composer test
