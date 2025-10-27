@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use Illuminate\Database\Schema\Blueprint;
@@ -12,7 +14,7 @@ abstract class TestCase extends Orchestra
     {
         parent::setUp();
 
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name')->nullable();
             $table->string('email')->nullable();
