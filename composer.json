@@ -1,0 +1,58 @@
+{
+    "name": "oliwol/laravel-slugify",
+    "type": "project",
+    "description": "A trait to easily add slug generation to your Laravel models.",
+    "keywords": [
+        "laravel",
+        "slug",
+        "slugify"
+    ],
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Oliwol\\Slugify\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.4",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/testing": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^v1.25.0",
+        "orchestra/testbench": "^v10.0",
+        "pestphp/pest": "^v4.0",
+        "rector/rector": "^2.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "scripts": {
+        "lint": "./vendor/bin/pint",
+        "refactor": "./vendor/bin/rector",
+        "test:arch": "./vendor/bin/pest --filter=arch",
+        "test:coverage": "./vendor/bin/pest --coverage --min=100",
+        "test:lint": "./vendor/bin/pint --test",
+        "test:refactor": "./vendor/bin/rector --dry-run",
+        "test:types": "phpstan analyse",
+        "test:unit": "./vendor/bin/pest --colors=always --coverage --parallel --exactly=100.0",
+        "test": [
+            "@test:lint",
+            "@test:refactor",
+            "@test:types",
+            "@test:arch",
+            "@test:unit"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
