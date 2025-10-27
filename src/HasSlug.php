@@ -55,11 +55,11 @@ trait HasSlug
         $count = 1;
 
         while (
-        $this
-            ->newQueryWithoutScopes()
-            ->where($this->getRouteKeyName(), $slug)
-            ->whereNot($this->getKeyName(), $this->getKey())
-            ->exists()
+            $this
+                ->newQueryWithoutScopes()
+                ->where($this->getRouteKeyName(), $slug)
+                ->whereNot($this->getKeyName(), $this->getKey())
+                ->exists()
         ) {
             $slug = $original.($count > 1 ? '-'.$count : '');
             $count++;

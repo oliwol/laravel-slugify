@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Eloquent\Model;
 use Oliwol\Slugify\HasSlug;
 
-it('creates a slug from an attribute', function () {
+it('creates a slug from an attribute', function (): void {
     $user = new UserWithRouteKeyName();
     $user->name = 'John Doe';
     $user->save();
@@ -11,7 +13,7 @@ it('creates a slug from an attribute', function () {
     expect($user->getAttribute('slug'))->toBe('john-doe');
 });
 
-test('not sluggable when getRouteKeyName is not set', function () {
+test('not sluggable when getRouteKeyName is not set', function (): void {
     $user = new UserWithoutRouteKeyName();
     $user->name = 'John Doe';
     $user->save();
@@ -19,7 +21,7 @@ test('not sluggable when getRouteKeyName is not set', function () {
     expect($user->getAttribute('slug'))->toBeNull();
 });
 
-it('does not slugify when attribute is not dirty', function () {
+it('does not slugify when attribute is not dirty', function (): void {
     $user = UserWithRouteKeyName::create(['name' => 'John Doe']);
     $slug = $user->slug;
 
@@ -29,7 +31,7 @@ it('does not slugify when attribute is not dirty', function () {
     expect($user->fresh()->slug)->toBe($slug);
 });
 
-it('does not slugify when slug is already filled', function () {
+it('does not slugify when slug is already filled', function (): void {
     $user = new UserWithRouteKeyName();
     $user->name = 'John Doe';
     $user->slug = 'custom-slug';
@@ -38,7 +40,7 @@ it('does not slugify when slug is already filled', function () {
     expect($user->getAttribute('slug'))->toBe('custom-slug');
 });
 
-it('increments the slug when already used', function () {
+it('increments the slug when already used', function (): void {
     UserWithRouteKeyName::create([
         'name' => 'John Doe',
     ]);
@@ -54,14 +56,14 @@ abstract class User extends Model
 {
     use HasSlug;
 
+    public $timestamps = false;
+
     protected $table = 'users';
 
     protected $guarded = [];
-
-    public $timestamps = false;
 }
 
-class UserWithoutRouteKeyName extends User
+final class UserWithoutRouteKeyName extends User
 {
     public function getSlugKeyName(): string
     {
@@ -69,7 +71,7 @@ class UserWithoutRouteKeyName extends User
     }
 }
 
-class UserWithRouteKeyName extends User
+final class UserWithRouteKeyName extends User
 {
     public function getSlugKeyName(): string
     {

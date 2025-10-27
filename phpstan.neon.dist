@@ -4,5 +4,10 @@ includes:
 parameters:
     level: max
 
+    ignoreErrors:
+            -
+                message: '#Trait Oliwol\\Slugify\\HasSlug is used zero times and is not analysed.#'
+                path: src/HasSlug.php
+
     paths:
         - src
