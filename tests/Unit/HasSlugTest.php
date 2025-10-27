@@ -65,7 +65,7 @@ abstract class User extends Model
 
 final class UserWithoutRouteKeyName extends User
 {
-    public function getSlugKeyName(): string
+    public function getSlugifyKeyName(): string
     {
         return 'name';
     }
@@ -73,7 +73,7 @@ final class UserWithoutRouteKeyName extends User
 
 final class UserWithRouteKeyName extends User
 {
-    public function getSlugKeyName(): string
+    public function getSlugifyKeyName(): string
     {
         return 'name';
     }
