@@ -3,22 +3,23 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Oliwol\Slugify\HasSlug;
 
 it('creates a slug from an attribute', function (): void {
-    $user = new UserWithRouteKeyName();
-    $user->name = 'John Doe';
-    $user->save();
+    $user = UserWithRouteKeyName::create(['name' => 'John Doe']);
 
-    expect($user->getAttribute('slug'))->toBe('john-doe');
+    expect($user->fresh()->getAttribute('slug'))->toBe('john-doe');
 });
 
-test('not sluggable when getRouteKeyName is not set', function (): void {
-    $user = new UserWithoutRouteKeyName();
-    $user->name = 'John Doe';
-    $user->save();
+it('throws an exception when no slug field exists', function (): void {
+    Post::create(['title' => 'My First Post']);
+})->throws(QueryException::class);
 
-    expect($user->getAttribute('slug'))->toBeNull();
+test('not sluggable when getRouteKeyName is not set', function (): void {
+    $user = UserWithoutRouteKeyName::create(['name' => 'John Doe']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBeNull();
 });
 
 it('does not slugify when attribute is not dirty', function (): void {
@@ -32,12 +33,12 @@ it('does not slugify when attribute is not dirty', function (): void {
 });
 
 it('does not slugify when slug is already filled', function (): void {
-    $user = new UserWithRouteKeyName();
-    $user->name = 'John Doe';
-    $user->slug = 'custom-slug';
-    $user->save();
+    $user = UserWithRouteKeyName::create([
+        'name' => 'Jane Doe',
+        'slug' => 'custom-slug',
+    ]);
 
-    expect($user->getAttribute('slug'))->toBe('custom-slug');
+    expect($user->fresh()->getAttribute('slug'))->toBe('custom-slug');
 });
 
 it('increments the slug when already used', function (): void {
@@ -45,11 +46,11 @@ it('increments the slug when already used', function (): void {
         'name' => 'John Doe',
     ]);
 
-    $user = new UserWithRouteKeyName();
-    $user->name = 'John Doe';
-    $user->save();
+    $user = UserWithRouteKeyName::create([
+        'name' => 'John Doe',
+    ]);
 
-    expect($user->getAttribute('slug'))->toBe('john-doe-2');
+    expect($user->fresh()->getAttribute('slug'))->toBe('john-doe-2');
 });
 
 abstract class User extends Model
@@ -76,6 +77,27 @@ final class UserWithRouteKeyName extends User
     public function getSlugifyKeyName(): string
     {
         return 'name';
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+}
+
+final class Post extends Model
+{
+    use HasSlug;
+
+    public $timestamps = false;
+
+    protected $table = 'posts';
+
+    protected $guarded = [];
+
+    public function getSlugifyKeyName(): string
+    {
+        return 'title';
     }
 
     public function getRouteKeyName(): string
