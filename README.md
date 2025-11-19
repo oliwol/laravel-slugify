@@ -18,7 +18,7 @@ Add the ```HasSlug``` trait to any Eloquent model where a slug should be automat
 
 You must implement:
 
-* ```getSlugifyKeyName()``` — the attribute used to generate the slug (e.g. name/title).
+* ```getAttributeToCreateSlugFrom()``` — the attribute used to generate the slug (e.g. name/title).
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
 * Optionally ```getAttributeToSaveSlugTo()``` — a different column to save the slug.
 * Optionally override ```getSlugScope()``` — scoping for uniqueness (e.g. per user, per company, per team).
@@ -35,7 +35,7 @@ class Post extends Model
     /**
      * Attribute used for generating the slug.
      */
-    public function getSlugifyKeyName(): string
+    public function getAttributeToCreateSlugFrom(): string
     {
         return 'name';
     }
