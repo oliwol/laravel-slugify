@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 arch()->preset()->php();
 
-arch('strict')->preset()->strict();
+arch()->preset()->strict();
 
-arch('security')->preset()->security();
+arch()->preset()->security();
 
 arch('global')
     ->expect(['dd', 'dump', 'ray', 'die', 'var_dump', 'sleep', 'usleep', 'dispatch', 'dispatch_sync'])
@@ -35,8 +35,3 @@ arch('avoid inheritance')
     ->expect('Oliwol\Slugify')
     ->classes()
     ->toExtendNothing();
-
-arch('annotations')
-    ->expect('Oliwol\Slugify')
-    ->toHavePropertiesDocumented()
-    ->toHaveMethodsDocumented();

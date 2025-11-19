@@ -4,60 +4,53 @@ declare(strict_types=1);
 
 namespace Oliwol\Slugify;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 trait HasSlug
 {
-    /**
-     * Get the attribute name to create the slug from.
-     */
-    abstract public function getSlugifyKeyName(): string;
+    abstract public function getAttributeToCreateSlugFrom(): string;
 
-    /**
-     * Create a slug from the given attribute.
-     */
     public function createSlug(): void
     {
         if (! $this->isSluggable()) {
             return;
         }
 
-        $saveSlugFrom = $this->getSlugifyKeyName();
-        $saveSlugTo = $this->getRouteKeyName();
+        $createSlugFromAttribute = $this->getAttributeToCreateSlugFrom();
+        $saveSlugToAttribute = $this->getAttributeToSaveSlugTo();
 
-        // Only update slug when the source attribute is dirty.
-        if (! $this->isDirty($saveSlugFrom)) {
+        // There are no changes to the source attribute; no need to recreate the slug.
+        if (! $this->isDirty($createSlugFromAttribute)) {
             return;
         }
 
         // Do not override manually set slugs.
-        if (filled($this->{$saveSlugTo}) && $this->getOriginal($saveSlugTo) !== $this->{$saveSlugTo}) {
+        if (filled($this->{$saveSlugToAttribute}) && $this->getOriginal($saveSlugToAttribute) !== $this->{$saveSlugToAttribute}) {
             return;
         }
 
-        $this->{$saveSlugTo} = $this->incrementsSlugIfExists(
-            $this->slugify($this->{$saveSlugFrom})
+        $this->{$saveSlugToAttribute} = $this->incrementSlugIfExists(
+            slug: $this->slugify($this->{$createSlugFromAttribute})
         );
     }
 
-    /**
-     * Increments the slug when the slug is already used.
-     * Otherwise, returns the original slug.
-     * Currently, no scope is applied when checking for existing slugs.
-     *
-     * TODO: Extend to allow different increment styles (e.g., appending date, random string, etc.).
-     * TODO: Allow extending scope to check for existing slugs (e.g., including soft-deleted models).
-     */
-    public function incrementsSlugIfExists(string $slug): string
+    public function getAttributeToSaveSlugTo(): string
+    {
+        return $this->getRouteKeyName();
+    }
+
+    public function incrementSlugIfExists(string $slug): string
     {
         $original = $slug;
         $count = 1;
 
         while (
             $this
-                ->newQueryWithoutScopes()
-                ->where($this->getRouteKeyName(), $slug)
+                ->newQuery()
+                ->tap(fn (Builder $query): Builder => $this->scopeSlugQuery($query))
+                ->where($this->getAttributeToSaveSlugTo(), $slug)
                 ->whereNot($this->getKeyName(), $this->getKey())
                 ->exists()
         ) {
@@ -68,30 +61,43 @@ trait HasSlug
         return $slug;
     }
 
-    /**
-     * Determine if the model is sluggable.
-     */
     public function isSluggable(): bool
     {
-        return $this->getRouteKeyName() !== $this->getKeyName() && $this->hasAttribute($this->getSlugifyKeyName());
+        $from = $this->getAttributeToCreateSlugFrom();
+
+        // Ensure that the route key name is different from the primary key name.
+        if ($this->getAttributeToSaveSlugTo() === $this->getKeyName()) {
+            return false;
+        }
+
+        // Ensure that the attribute to create slug from exists.
+        if (! $this->hasAttribute($from)) {
+            return false;
+        }
+
+        $value = $this->getAttribute($from);
+
+        // Ensure that the attribute to create slug from is filled.
+        if (! filled($value)) {
+            return false;
+        }
+
+        // Ensure that the attribute to create slug from is a string.
+        return is_string($value);
     }
 
-    /**
-     * Slugify a given string.
-     *
-     * TODO: Allow overriding this method in case of a different slugify is needed.
-     */
+    public function scopeSlugQuery($query)
+    {
+        return $query;
+    }
+
     public function slugify(string $toSlug): string
     {
         return Str::slug($toSlug);
     }
 
-    /**
-     * When booting the model, we will hook into some events.
-     */
     protected static function bootHasSlug(): void
     {
-        static::creating(fn (Model $model) => $model->createSlug());
-        static::updating(fn (Model $model) => $model->createSlug());
+        static::saving(fn (Model $model) => $model->createSlug());
     }
 }

@@ -2,17 +2,19 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Oliwol\Slugify\HasSlug;
+use Tests\Models\Post;
+use Tests\Models\UserHasRouteKeyName;
+use Tests\Models\UserHasScope;
+use Tests\Models\UserWithoutRouteKeyName;
 
 it('creates a slug from an attribute', function (): void {
-    $user = UserWithRouteKeyName::create(['name' => 'John Doe']);
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
 
     expect($user->fresh()->getAttribute('slug'))->toBe('john-doe');
 });
 
-it('throws an exception when no slug field exists', function (): void {
+it('throws an exception when no slug field exists in database', function (): void {
     Post::create(['title' => 'My First Post']);
 })->throws(QueryException::class);
 
@@ -23,7 +25,7 @@ test('not sluggable when getRouteKeyName is not set', function (): void {
 });
 
 it('does not slugify when attribute is not dirty', function (): void {
-    $user = UserWithRouteKeyName::create(['name' => 'John Doe']);
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
     $slug = $user->slug;
 
     $user->setAttribute('email', 'test@example.com');
@@ -33,7 +35,7 @@ it('does not slugify when attribute is not dirty', function (): void {
 });
 
 it('does not slugify when slug is already filled', function (): void {
-    $user = UserWithRouteKeyName::create([
+    $user = UserHasRouteKeyName::create([
         'name' => 'Jane Doe',
         'slug' => 'custom-slug',
     ]);
@@ -41,67 +43,55 @@ it('does not slugify when slug is already filled', function (): void {
     expect($user->fresh()->getAttribute('slug'))->toBe('custom-slug');
 });
 
+it('does not slugify when attribute to create slug from is null', function (): void {
+    $user = UserHasRouteKeyName::create([
+        'name' => null,
+    ]);
+
+    expect($user->fresh()->getAttribute('slug'))->toBeNull();
+});
+
+it('does not slugify when attribute to create slug from is empty', function (): void {
+    $user = UserHasRouteKeyName::create([
+        'name' => '',
+    ]);
+
+    expect($user->fresh()->getAttribute('slug'))->toBeNull();
+});
+
+it('does not slugify when attribute to create slug from not set', function (): void {
+    $user = UserHasRouteKeyName::create();
+
+    expect($user->fresh()->getAttribute('slug'))->toBeNull();
+});
+
 it('increments the slug when already used', function (): void {
-    UserWithRouteKeyName::create([
+    UserHasRouteKeyName::create([
         'name' => 'John Doe',
     ]);
 
-    $user = UserWithRouteKeyName::create([
+    $user = UserHasRouteKeyName::create([
         'name' => 'John Doe',
     ]);
 
     expect($user->fresh()->getAttribute('slug'))->toBe('john-doe-2');
 });
 
-abstract class User extends Model
-{
-    use HasSlug;
+it('increments the slug correctly multiple times', function (): void {
+    UserHasRouteKeyName::create(['name' => 'John Doe']);
+    UserHasRouteKeyName::create(['name' => 'John Doe']);
+    UserHasRouteKeyName::create(['name' => 'John Doe']);
 
-    public $timestamps = false;
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
 
-    protected $table = 'users';
+    expect($user->fresh()->getAttribute('slug'))->toBe('john-doe-4');
+});
 
-    protected $guarded = [];
-}
+it('incrementing respects scope', function (): void {
+    UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 1]);
+    UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 2]);
+    UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 1]);
 
-final class UserWithoutRouteKeyName extends User
-{
-    public function getSlugifyKeyName(): string
-    {
-        return 'name';
-    }
-}
-
-final class UserWithRouteKeyName extends User
-{
-    public function getSlugifyKeyName(): string
-    {
-        return 'name';
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
-}
-
-final class Post extends Model
-{
-    use HasSlug;
-
-    public $timestamps = false;
-
-    protected $table = 'posts';
-
-    protected $guarded = [];
-
-    public function getSlugifyKeyName(): string
-    {
-        return 'title';
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
-}
+    $user = UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 2]);
+    expect($user->fresh()->getAttribute('slug'))->toBe('john-doe-2');
+});
