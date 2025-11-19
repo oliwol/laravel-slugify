@@ -19,6 +19,7 @@ abstract class TestCase extends Orchestra
             $table->string('name')->nullable();
             $table->string('email')->nullable();
             $table->string('slug')->nullable();
+            $table->integer('tenant_id')->nullable();
         });
 
         Schema::create('posts', function (Blueprint $table): void {
