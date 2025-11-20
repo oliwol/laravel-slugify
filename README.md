@@ -1,7 +1,8 @@
 # 🌀 Laravel Slugify
 
-A lightweight, framework-native **Laravel Eloquent trait** that automatically generates and maintains unique slugs for your models.  
-It requires **no external dependencies**, uses Laravel’s native `Str::slug()` helper, and gracefully handles dirty attributes, manual overrides, and custom scoping.
+A tiny trait that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
+
+Attach it to a model, define the source attribute, and the trait quietly handles generation, updates and uniqueness.
 
 ---
 
@@ -14,14 +15,14 @@ composer require oliwol/laravel-slugify
 ```
 
 ## 🛠️ Usage
-Add the ```HasSlug``` trait to any Eloquent model where a slug should be automatically generated and kept unique.
+Add the ```HasSlug``` trait to any Eloquent model where a slug should be automatically generated.
 
 You must implement:
 
 * ```getAttributeToCreateSlugFrom()``` — the attribute used to generate the slug (e.g. name/title).
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
 * Optionally ```getAttributeToSaveSlugTo()``` — a different column to save the slug.
-* Optionally override ```getSlugScope()``` — scoping for uniqueness (e.g. per user, per company, per team).
+* Optionally override ```getSlugScope()``` — scoping for uniqueness (e.g. per team).
 
 ```php
 use Illuminate\Database\Eloquent\Builder;
@@ -41,7 +42,17 @@ class Post extends Model
     }
 
     /**
-     * Attribute where the slug is saved.
+     * Use slug for route binding.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * This package uses Laravel's getRouteKeyName to store the slug. 
+     * If you are using a different column for your routes, 
+     * use getAttributeToSaveSlugTo to store the slug.
      */
     public function getAttributeToSaveSlugTo(): string
     {
@@ -50,20 +61,10 @@ class Post extends Model
 
     /**
      * Scope applied when checking for uniqueness.
-     *
-     * Example: all slugs must be unique per user_id.
      */
     public function getSlugScope(): Builder
     {
-        return fn (Builder $query): Builder => $query->where('user_id', $this->user_id);
-    }
-
-    /**
-     * Use slug for route binding.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
+        return fn (Builder $query): Builder => $query->where('tenant_id', 1);
     }
 }
 ```
@@ -102,14 +103,14 @@ When triggered, it will:
 
 ## ✅ Best practices & caveats
 
-- Ensure the route key column (getRouteKeyName()) is present in your table and is not the primary key (unless intentionally designed).
+- Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).
 - If you manually set a slug, the trait will not override it. Use this to allow user-edited slugs.
 
 ## 🔍 Custom Scoping Example
 
 To ensure slugs are unique per tenant, override the `getSlugScope()` method:
 
-```phpphp
+```php
 public function getSlugScope(): Builder
 {
     return fn (Builder $query): Builder => $query->where('tenant_id', 1);
