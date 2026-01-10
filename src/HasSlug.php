@@ -14,25 +14,21 @@ trait HasSlug
 
     public function createSlug(): void
     {
-        if (! $this->isSluggable()) {
-            return;
-        }
-
-        $createSlugFromAttribute = $this->getAttributeToCreateSlugFrom();
-        $saveSlugToAttribute = $this->getAttributeToSaveSlugTo();
+        $source = $this->getAttributeToCreateSlugFrom();
+        $target = $this->getAttributeToSaveSlugTo();
 
         // There are no changes to the source attribute; no need to recreate the slug.
-        if (! $this->isDirty($createSlugFromAttribute)) {
+        if (! $this->isDirty($source)) {
             return;
         }
 
         // Do not override manually set slugs.
-        if (filled($this->{$saveSlugToAttribute}) && $this->getOriginal($saveSlugToAttribute) !== $this->{$saveSlugToAttribute}) {
+        if (filled($this->{$target}) && $this->isDirty($target)) {
             return;
         }
 
-        $this->{$saveSlugToAttribute} = $this->incrementSlugIfExists(
-            slug: $this->slugify($this->{$createSlugFromAttribute})
+        $this->{$target} = $this->incrementSlugIfExists(
+            slug: $this->slugify($this->{$source} ?? '')
         );
     }
 
@@ -41,20 +37,23 @@ trait HasSlug
         return $this->getRouteKeyName();
     }
 
+    public function getSlugSeparator(): string
+    {
+        return '-';
+    }
+
+    public function getSlugLanguage(): string
+    {
+        return 'en';
+    }
+
     public function incrementSlugIfExists(string $slug): string
     {
         $original = $slug;
-        $count = 1;
+        $count = 2;
 
-        while (
-            $this
-                ->newQuery()
-                ->tap(fn (Builder $query): Builder => $this->scopeSlugQuery($query))
-                ->where($this->getAttributeToSaveSlugTo(), $slug)
-                ->whereNot($this->getKeyName(), $this->getKey())
-                ->exists()
-        ) {
-            $slug = $original.($count > 1 ? '-'.$count : '');
+        while ($this->slugExists($slug)) {
+            $slug = $original.'-'.$count;
             $count++;
         }
 
@@ -93,11 +92,24 @@ trait HasSlug
 
     public function slugify(string $toSlug): string
     {
-        return Str::slug($toSlug);
+        return Str::slug($toSlug, $this->getSlugSeparator(), $this->getSlugLanguage());
     }
 
     protected static function bootHasSlug(): void
     {
-        static::saving(fn (Model $model) => $model->createSlug());
+        static::saving(function (Model $model): void {
+            if ($model->isSluggable()) {
+                $model->createSlug();
+            }
+        });
+    }
+
+    protected function slugExists(string $slug): bool
+    {
+        return $this->newQuery()
+            ->tap(fn (Builder $query) => $this->scopeSlugQuery($query))
+            ->where($this->getAttributeToSaveSlugTo(), $slug)
+            ->whereNot($this->getKeyName(), $this->getKey())
+            ->exists();
     }
 }
