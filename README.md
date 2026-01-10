@@ -2,7 +2,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/oliwol/laravel-slugify.svg?style=flat-square)](https://packagist.org/packages/oliwol/laravel-slugify)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/oliwol/laravel-slugify/.github/workflows/tests.yml?branch=1.x&label=tests&style=flat-square)](https://github.com/oliwol/laravel-slugify/actions)
-[![License](https://img.shields.io/packagist/l/oliwol/laravel-slugify.svg?style=flat-square)](https://github.com/oliwol/laravel-slugify/blob/main/LICENSE.md)
+[![License](https://img.shields.io/packagist/l/oliwol/laravel-slugify.svg?style=flat-square)](https://github.com/oliwol/laravel-slugify/blob/1.x/LICENSE)
 
 A tiny trait that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
 
@@ -30,6 +30,11 @@ class Post extends Model
     public function getAttributeToCreateSlugFrom(): string
     {
         return 'title';
+    }
+    
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 }
 ```
