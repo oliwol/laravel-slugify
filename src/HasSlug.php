@@ -85,7 +85,7 @@ trait HasSlug
         return is_string($value);
     }
 
-    public function scopeSlugQuery($query): Builder
+    public function scopeSlugQuery($query)
     {
         return $query;
     }
