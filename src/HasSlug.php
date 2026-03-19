@@ -7,10 +7,24 @@ namespace Oliwol\Slugify;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use LogicException;
+use ReflectionClass;
 
 trait HasSlug
 {
-    abstract public function getAttributeToCreateSlugFrom(): string;
+    public function getAttributeToCreateSlugFrom(): string
+    {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify) {
+            return $attribute->from;
+        }
+
+        throw new LogicException(sprintf(
+            'Class %s must either override getAttributeToCreateSlugFrom() or use the #[Slugify] attribute.',
+            static::class,
+        ));
+    }
 
     public function createSlug(): void
     {
@@ -34,6 +48,12 @@ trait HasSlug
 
     public function getAttributeToSaveSlugTo(): string
     {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify && $attribute->to !== null) {
+            return $attribute->to;
+        }
+
         return $this->getRouteKeyName();
     }
 
@@ -111,5 +131,16 @@ trait HasSlug
             ->where($this->getAttributeToSaveSlugTo(), $slug)
             ->whereNot($this->getKeyName(), $this->getKey())
             ->exists();
+    }
+
+    private function resolveSlugifyAttribute(): ?Slugify
+    {
+        $attributes = new ReflectionClass($this)->getAttributes(Slugify::class);
+
+        if ($attributes === []) {
+            return null;
+        }
+
+        return $attributes[0]->newInstance();
     }
 }
