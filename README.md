@@ -20,6 +20,21 @@ composer require oliwol/laravel-slugify
 
 ## ⚡️ Quick Start
 
+### Using the PHP Attribute (recommended)
+
+```php
+use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    use HasSlug;
+}
+```
+
+### Using method overrides
+
 ```php
 use Oliwol\Slugify\HasSlug;
 
@@ -31,7 +46,7 @@ class Post extends Model
     {
         return 'title';
     }
-    
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -39,10 +54,47 @@ class Post extends Model
 }
 ```
 
+> **Priority**: Method overrides always take precedence over the `#[Slugify]` attribute.
+
 ## 🛠️ Usage
 Add the ```HasSlug``` trait to any Eloquent model where a slug should be automatically generated.
 
-You must implement:
+### Configuration via `#[Slugify]` Attribute
+
+The `#[Slugify]` attribute accepts two parameters:
+
+* `from` (required) — the attribute used to generate the slug (e.g. `'name'`, `'title'`).
+* `to` (optional) — the column to save the slug to. Falls back to `getRouteKeyName()` if omitted.
+
+```php
+use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\Slugify;
+
+// Full configuration via attribute
+#[Slugify(from: 'name', to: 'slug')]
+class Post extends Model
+{
+    use HasSlug;
+}
+
+// Only 'from' — slug column is determined by getRouteKeyName()
+#[Slugify(from: 'name')]
+class Post extends Model
+{
+    use HasSlug;
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+}
+```
+
+> **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
+
+### Configuration via methods
+
+Alternatively, you can configure slug generation by overriding methods:
 
 * ```getAttributeToCreateSlugFrom()``` — the attribute used to generate the slug (e.g. name/title).
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
@@ -75,8 +127,8 @@ class Post extends Model
     }
 
     /**
-     * This package uses Laravel's getRouteKeyName to store the slug. 
-     * If you are using a different column for your routes, 
+     * This package uses Laravel's getRouteKeyName to store the slug.
+     * If you are using a different column for your routes,
      * use getAttributeToSaveSlugTo to store the slug.
      */
     public function getAttributeToSaveSlugTo(): string
@@ -124,11 +176,12 @@ protected static function bootHasSlug(): void
 
 When triggered, it will:
 
-1. Generate a slug from the attribute defined by ```getAttributeToCreateSlugFrom()```.
-2. Skip regeneration if:
-   1. The source attribute is not dirty (unchanged), or 
+1. Resolve the source attribute — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override.
+2. Generate a slug from that source attribute.
+3. Skip regeneration if:
+   1. The source attribute is not dirty (unchanged), or
    2. The slug has been manually set and differs from the original.
-3. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
+4. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
 
 ## ✅ Best practices & caveats
 
