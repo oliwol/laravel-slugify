@@ -6,6 +6,9 @@ use Illuminate\Database\QueryException;
 use Tests\Models\Post;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
+use Tests\Models\UserWithAttribute;
+use Tests\Models\UserWithAttributeFromOnly;
+use Tests\Models\UserWithoutAttributeOrMethod;
 use Tests\Models\UserWithoutRouteKeyName;
 
 it('creates a slug from an attribute', function (): void {
@@ -95,3 +98,19 @@ it('incrementing respects scope', function (): void {
     $user = UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 2]);
     expect($user->fresh()->getAttribute('slug'))->toBe('john-doe-2');
 });
+
+it('creates a slug using the #[Slugify] attribute with from and to', function (): void {
+    $user = UserWithAttribute::create(['name' => 'Jane Doe']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('jane-doe');
+});
+
+it('creates a slug using the #[Slugify] attribute with only from, falling back to getRouteKeyName', function (): void {
+    $user = UserWithAttributeFromOnly::create(['name' => 'Jane Doe']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('jane-doe');
+});
+
+it('throws a LogicException when neither #[Slugify] attribute nor method override is present', function (): void {
+    UserWithoutAttributeOrMethod::create(['name' => 'Jane Doe']);
+})->throws(LogicException::class);
