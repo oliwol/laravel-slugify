@@ -1,6 +1,6 @@
 {
     "name": "oliwol/laravel-slugify",
-    "type": "project",
+    "type": "library",
     "description": "A trait to easily add slug generation to your Laravel models.",
     "keywords": [
         "laravel",
