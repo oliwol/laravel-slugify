@@ -17,5 +17,6 @@ final readonly class Slugify
         public ?string $to = null,
         public ?string $separator = null,
         public ?int $maxLength = null,
+        public bool $regenerateOnUpdate = true,
     ) {}
 }
