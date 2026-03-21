@@ -42,7 +42,7 @@ class Post extends Model
 {
     use HasSlug;
 
-    public function getAttributeToCreateSlugFrom(): string
+    public function getAttributeToCreateSlugFrom(): string|array
     {
         return 'title';
     }
@@ -63,7 +63,7 @@ Add the ```HasSlug``` trait to any Eloquent model where a slug should be automat
 
 The `#[Slugify]` attribute accepts two parameters:
 
-* `from` (required) — the attribute used to generate the slug (e.g. `'name'`, `'title'`).
+* `from` (required) — the attribute(s) used to generate the slug. Accepts a single string (e.g. `'name'`) or an array of strings (e.g. `['first_name', 'last_name']`).
 * `to` (optional) — the column to save the slug to. Falls back to `getRouteKeyName()` if omitted.
 
 ```php
@@ -88,6 +88,14 @@ class Post extends Model
         return 'slug';
     }
 }
+
+// Multiple source attributes — generates slug from combined values
+#[Slugify(from: ['first_name', 'last_name'], to: 'slug')]
+class Author extends Model
+{
+    use HasSlug;
+}
+// first_name: "John", last_name: "Doe" → "john-doe"
 ```
 
 > **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
@@ -96,7 +104,7 @@ class Post extends Model
 
 Alternatively, you can configure slug generation by overriding methods:
 
-* ```getAttributeToCreateSlugFrom()``` — the attribute used to generate the slug (e.g. name/title).
+* ```getAttributeToCreateSlugFrom()``` — the attribute(s) used to generate the slug. Return a `string` or `array<string>`.
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
 * Optionally ```getAttributeToSaveSlugTo()``` — a different column to save the slug.
 * Optionally override ```scopeSlugQuery()``` — scoping for uniqueness (e.g. per team).
@@ -111,9 +119,10 @@ class Post extends Model
     use HasSlug;
 
     /**
-     * Attribute used for generating the slug.
+     * Attribute(s) used for generating the slug.
+     * Return a string or an array of strings.
      */
-    public function getAttributeToCreateSlugFrom(): string
+    public function getAttributeToCreateSlugFrom(): string|array
     {
         return 'name';
     }
@@ -176,10 +185,10 @@ protected static function bootHasSlug(): void
 
 When triggered, it will:
 
-1. Resolve the source attribute — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override.
-2. Generate a slug from that source attribute.
+1. Resolve the source attribute(s) — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override. Supports a single attribute or multiple attributes.
+2. Generate a slug by combining filled source values (null/empty values are skipped).
 3. Skip regeneration if:
-   1. The source attribute is not dirty (unchanged), or
+   1. None of the source attributes are dirty (unchanged), or
    2. The slug has been manually set and differs from the original.
 4. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
 
