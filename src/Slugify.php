@@ -15,5 +15,6 @@ final readonly class Slugify
     public function __construct(
         public string|array $from,
         public ?string $to = null,
+        public ?string $separator = null,
     ) {}
 }

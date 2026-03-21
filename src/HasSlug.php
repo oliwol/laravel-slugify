@@ -69,6 +69,12 @@ trait HasSlug
 
     public function getSlugSeparator(): string
     {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify && $attribute->separator !== null) {
+            return $attribute->separator;
+        }
+
         return '-';
     }
 
@@ -80,10 +86,11 @@ trait HasSlug
     public function incrementSlugIfExists(string $slug): string
     {
         $original = $slug;
+        $separator = $this->getSlugSeparator();
         $count = 2;
 
         while ($this->slugExists($slug)) {
-            $slug = $original.'-'.$count;
+            $slug = $original.$separator.$count;
             $count++;
         }
 

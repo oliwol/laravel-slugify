@@ -61,10 +61,11 @@ Add the ```HasSlug``` trait to any Eloquent model where a slug should be automat
 
 ### Configuration via `#[Slugify]` Attribute
 
-The `#[Slugify]` attribute accepts two parameters:
+The `#[Slugify]` attribute accepts the following parameters:
 
 * `from` (required) — the attribute(s) used to generate the slug. Accepts a single string (e.g. `'name'`) or an array of strings (e.g. `['first_name', 'last_name']`).
 * `to` (optional) — the column to save the slug to. Falls back to `getRouteKeyName()` if omitted.
+* `separator` (optional) — the character used to separate words in the slug. Defaults to `'-'`.
 
 ```php
 use Oliwol\Slugify\HasSlug;
@@ -96,6 +97,14 @@ class Author extends Model
     use HasSlug;
 }
 // first_name: "John", last_name: "Doe" → "john-doe"
+
+// Custom separator — uses underscores instead of hyphens
+#[Slugify(from: 'title', to: 'slug', separator: '_')]
+class Post extends Model
+{
+    use HasSlug;
+}
+// "Hello World" → "hello_world"
 ```
 
 > **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
@@ -107,6 +116,7 @@ Alternatively, you can configure slug generation by overriding methods:
 * ```getAttributeToCreateSlugFrom()``` — the attribute(s) used to generate the slug. Return a `string` or `array<string>`.
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
 * Optionally ```getAttributeToSaveSlugTo()``` — a different column to save the slug.
+* Optionally ```getSlugSeparator()``` — the separator character (default `'-'`).
 * Optionally override ```scopeSlugQuery()``` — scoping for uniqueness (e.g. per team).
 
 ```php
