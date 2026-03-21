@@ -13,7 +13,10 @@ use ReflectionClass;
 
 trait HasSlug
 {
-    public function getAttributeToCreateSlugFrom(): string
+    /**
+     * @return string|array<int, string>
+     */
+    public function getAttributeToCreateSlugFrom(): string|array
     {
         $attribute = $this->resolveSlugifyAttribute();
 
@@ -31,9 +34,10 @@ trait HasSlug
     {
         $source = $this->getAttributeToCreateSlugFrom();
         $target = $this->getAttributeToSaveSlugTo();
+        $sources = (array) $source;
 
-        // There are no changes to the source attribute; no need to recreate the slug.
-        if (! $this->isDirty($source)) {
+        // There are no changes to any source attribute; no need to recreate the slug.
+        if (! $this->isDirty($sources)) {
             return;
         }
 
@@ -42,8 +46,13 @@ trait HasSlug
             return;
         }
 
+        $value = collect($sources)
+            ->map(fn (string $field): ?string => $this->getAttribute($field))
+            ->filter(fn (?string $field): bool => filled($field))
+            ->implode(' ');
+
         $this->{$target} = $this->incrementSlugIfExists(
-            slug: $this->slugify($this->{$source} ?? '')
+            slug: $this->slugify($value)
         );
     }
 
@@ -83,27 +92,31 @@ trait HasSlug
 
     public function isSluggable(): bool
     {
-        $from = $this->getAttributeToCreateSlugFrom();
+        $sources = (array) $this->getAttributeToCreateSlugFrom();
 
         // Ensure that the route key name is different from the primary key name.
         if ($this->getAttributeToSaveSlugTo() === $this->getKeyName()) {
             return false;
         }
 
-        // Ensure that the attribute to create slug from exists.
-        if (! $this->hasAttribute($from)) {
-            return false;
+        // Ensure that at least one source attribute exists and has a filled string value.
+        $hasFilledSource = false;
+
+        foreach ($sources as $from) {
+            if (! $this->hasAttribute($from)) {
+                continue;
+            }
+
+            $value = $this->getAttribute($from);
+
+            if (filled($value) && is_string($value)) {
+                $hasFilledSource = true;
+
+                break;
+            }
         }
 
-        $value = $this->getAttribute($from);
-
-        // Ensure that the attribute to create slug from is filled.
-        if (! filled($value)) {
-            return false;
-        }
-
-        // Ensure that the attribute to create slug from is a string.
-        return is_string($value);
+        return $hasFilledSource;
     }
 
     public function scopeSlugQuery($query)

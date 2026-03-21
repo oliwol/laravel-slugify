@@ -9,8 +9,11 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class Slugify
 {
+    /**
+     * @param  string|array<int, string>  $from
+     */
     public function __construct(
-        public string $from,
+        public string|array $from,
         public ?string $to = null,
     ) {}
 }
