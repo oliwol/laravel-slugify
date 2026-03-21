@@ -6,6 +6,7 @@ use Illuminate\Database\QueryException;
 use Tests\Models\AuthorWithAttribute;
 use Tests\Models\AuthorWithMethod;
 use Tests\Models\Post;
+use Tests\Models\PostWithCustomSeparator;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
 use Tests\Models\UserWithAttribute;
@@ -173,4 +174,25 @@ it('increments slug from multiple attributes when already used', function (): vo
     $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
 
     expect($author->fresh()->getAttribute('slug'))->toBe('john-doe-2');
+});
+
+// --- Custom separator ---
+
+it('creates a slug with a custom separator via #[Slugify] attribute', function (): void {
+    $post = PostWithCustomSeparator::create(['title' => 'Hello World']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello_world');
+});
+
+it('uses the custom separator for uniqueness suffix', function (): void {
+    PostWithCustomSeparator::create(['title' => 'Hello World']);
+    $post = PostWithCustomSeparator::create(['title' => 'Hello World']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello_world_2');
+});
+
+it('uses the default separator when none is specified', function (): void {
+    $user = UserHasRouteKeyName::create(['name' => 'Hello World']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('hello-world');
 });
