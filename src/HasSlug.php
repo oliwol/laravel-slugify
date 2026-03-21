@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use LogicException;
+use ReflectionAttribute;
 use ReflectionClass;
 
 trait HasSlug
@@ -135,6 +136,7 @@ trait HasSlug
 
     private function resolveSlugifyAttribute(): ?Slugify
     {
+        /** @var list<ReflectionAttribute<Slugify>> $attributes */
         $attributes = new ReflectionClass($this)->getAttributes(Slugify::class);
 
         if ($attributes === []) {

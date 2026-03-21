@@ -139,9 +139,9 @@ class Post extends Model
     /**
      * Scope applied when checking for uniqueness.
      */
-    public function scopeSlugQuery(): Builder
+    public function scopeSlugQuery($query)
     {
-        return fn (Builder $query): Builder => $query->where('tenant_id', 1);
+        return $query->where('tenant_id', 1);
     }
 }
 ```
@@ -193,9 +193,9 @@ When triggered, it will:
 To ensure slugs are unique per tenant, override the `scopeSlugQuery()` method:
 
 ```php
-public function scopeSlugQuery(): Builder
+public function scopeSlugQuery($query)
 {
-    return fn (Builder $query): Builder => $query->where('tenant_id', 1);
+    return $query->where('tenant_id', 1);
 }
 ```
 This will append a `WHERE tenant_id = ?` clause when checking for existing slugs.
