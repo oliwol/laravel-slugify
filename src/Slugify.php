@@ -16,5 +16,6 @@ final readonly class Slugify
         public string|array $from,
         public ?string $to = null,
         public ?string $separator = null,
+        public ?int $maxLength = null,
     ) {}
 }
