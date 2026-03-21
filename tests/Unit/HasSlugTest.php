@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Database\QueryException;
+use Tests\Models\AuthorWithAttribute;
+use Tests\Models\AuthorWithMethod;
 use Tests\Models\Post;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
@@ -114,3 +116,61 @@ it('creates a slug using the #[Slugify] attribute with only from, falling back t
 it('throws a LogicException when neither #[Slugify] attribute nor method override is present', function (): void {
     UserWithoutAttributeOrMethod::create(['name' => 'Jane Doe']);
 })->throws(LogicException::class);
+
+// --- Multiple source attributes ---
+
+it('creates a slug from multiple attributes via #[Slugify] attribute', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('john-doe');
+});
+
+it('creates a slug from multiple attributes via method override', function (): void {
+    $author = AuthorWithMethod::create(['first_name' => 'John', 'last_name' => 'Doe']);
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('john-doe');
+});
+
+it('skips null attributes when creating slug from multiple fields', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => null]);
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('john');
+});
+
+it('skips empty attributes when creating slug from multiple fields', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => '', 'last_name' => 'Doe']);
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('doe');
+});
+
+it('is not sluggable when all source attributes are null', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => null, 'last_name' => null]);
+
+    expect($author->fresh()->getAttribute('slug'))->toBeNull();
+});
+
+it('regenerates slug when any source attribute is dirty', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
+
+    $author->setAttribute('last_name', 'Smith');
+    $author->save();
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('john-smith');
+});
+
+it('does not regenerate slug when no source attribute is dirty for multiple fields', function (): void {
+    $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
+    $slug = $author->slug;
+
+    $author->setAttribute('email', 'john@example.com');
+    $author->save();
+
+    expect($author->fresh()->getAttribute('slug'))->toBe($slug);
+});
+
+it('increments slug from multiple attributes when already used', function (): void {
+    AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
+    $author = AuthorWithAttribute::create(['first_name' => 'John', 'last_name' => 'Doe']);
+
+    expect($author->fresh()->getAttribute('slug'))->toBe('john-doe-2');
+});

@@ -17,6 +17,8 @@ abstract class TestCase extends Orchestra
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name')->nullable();
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
             $table->string('email')->nullable();
             $table->string('slug')->nullable();
             $table->integer('tenant_id')->nullable();
