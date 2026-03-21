@@ -78,6 +78,17 @@ trait HasSlug
         return '-';
     }
 
+    public function getMaxSlugLength(): ?int
+    {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify && $attribute->maxLength !== null) {
+            return $attribute->maxLength;
+        }
+
+        return null;
+    }
+
     public function getSlugLanguage(): string
     {
         return 'en';
@@ -85,12 +96,15 @@ trait HasSlug
 
     public function incrementSlugIfExists(string $slug): string
     {
+        $slug = $this->truncateSlug($slug);
         $original = $slug;
         $separator = $this->getSlugSeparator();
         $count = 2;
 
         while ($this->slugExists($slug)) {
-            $slug = $original.$separator.$count;
+            $suffix = $separator.$count;
+            $base = $this->truncateSlug($original, mb_strlen($suffix));
+            $slug = $base.$suffix;
             $count++;
         }
 
@@ -129,6 +143,40 @@ trait HasSlug
     public function scopeSlugQuery($query)
     {
         return $query;
+    }
+
+    public function truncateSlug(string $slug, int $reservedLength = 0): string
+    {
+        $maxLength = $this->getMaxSlugLength();
+
+        if ($maxLength === null) {
+            return $slug;
+        }
+
+        $available = $maxLength - $reservedLength;
+
+        if (mb_strlen($slug) <= $available) {
+            return $slug;
+        }
+
+        $separator = $this->getSlugSeparator();
+        $truncated = mb_substr($slug, 0, $available);
+
+        // If the cut lands exactly on a word boundary, no further trimming needed.
+        $nextChar = mb_substr($slug, $available, 1);
+
+        if ($nextChar === $separator) {
+            return $truncated;
+        }
+
+        // Trim at the last separator to avoid cutting mid-word.
+        $lastSeparator = mb_strrpos($truncated, (string) $separator);
+
+        if ($lastSeparator !== false) {
+            return mb_substr($truncated, 0, $lastSeparator);
+        }
+
+        return $truncated;
     }
 
     public function slugify(string $toSlug): string

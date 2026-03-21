@@ -7,6 +7,7 @@ use Tests\Models\AuthorWithAttribute;
 use Tests\Models\AuthorWithMethod;
 use Tests\Models\Post;
 use Tests\Models\PostWithCustomSeparator;
+use Tests\Models\PostWithMaxLength;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
 use Tests\Models\UserWithAttribute;
@@ -195,4 +196,52 @@ it('uses the default separator when none is specified', function (): void {
     $user = UserHasRouteKeyName::create(['name' => 'Hello World']);
 
     expect($user->fresh()->getAttribute('slug'))->toBe('hello-world');
+});
+
+// --- Max length ---
+
+it('truncates slug at word boundary when exceeding max length', function (): void {
+    // "hello-world-foo" = 15 chars, fits exactly
+    $post = PostWithMaxLength::create(['title' => 'Hello World Foo']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world-foo');
+});
+
+it('truncates slug at word boundary when too long', function (): void {
+    // "hello-world-foo-bar" = 19 chars, exceeds 15 → truncate to "hello-world-foo"
+    $post = PostWithMaxLength::create(['title' => 'Hello World Foo Bar']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world-foo');
+});
+
+it('accounts for uniqueness suffix within max length', function (): void {
+    // Both get "hello-world-foo" (15 chars), second needs suffix
+    // "hello-world-foo" + "-2" = 17 > 15, so base truncated to "hello-world" + "-2" = 13
+    PostWithMaxLength::create(['title' => 'Hello World Foo Bar']);
+    $post = PostWithMaxLength::create(['title' => 'Hello World Foo Bar']);
+
+    $slug = $post->fresh()->getAttribute('slug');
+    expect($slug)->toBe('hello-world-2');
+    expect(mb_strlen((string) $slug))->toBeLessThanOrEqual(15);
+});
+
+it('does not truncate when max length is null', function (): void {
+    $user = UserHasRouteKeyName::create(['name' => 'This Is A Really Long Name That Should Not Be Truncated']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('this-is-a-really-long-name-that-should-not-be-truncated');
+});
+
+it('truncates single word without separator when exceeding max length', function (): void {
+    // "abcdefghijklmnop" = 16 chars, no separator → hard truncate to 15
+    $post = PostWithMaxLength::create(['title' => 'Abcdefghijklmnop']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('abcdefghijklmno');
+});
+
+it('handles truncation when single word exceeds remaining length', function (): void {
+    // "ab-cdefghijklmnop" = 17 chars, exceeds 15 → truncated to "ab-cdefghijklmn" (15), next char is "o" (not separator) → trim to "ab"
+    $post = PostWithMaxLength::create(['title' => 'Ab Cdefghijklmnop']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('ab');
+    expect(mb_strlen((string) $post->fresh()->getAttribute('slug')))->toBeLessThanOrEqual(15);
 });
