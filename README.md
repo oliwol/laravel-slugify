@@ -66,6 +66,8 @@ The `#[Slugify]` attribute accepts the following parameters:
 * `from` (required) — the attribute(s) used to generate the slug. Accepts a single string (e.g. `'name'`) or an array of strings (e.g. `['first_name', 'last_name']`).
 * `to` (optional) — the column to save the slug to. Falls back to `getRouteKeyName()` if omitted.
 * `separator` (optional) — the character used to separate words in the slug. Defaults to `'-'`.
+* `maxLength` (optional) — maximum number of characters for the slug. Truncates at word boundaries. Defaults to `null` (no limit).
+* `regenerateOnUpdate` (optional) — whether to regenerate the slug when the source attribute changes on update. Defaults to `true`. Set to `false` to only generate slugs on creation (useful for SEO).
 
 ```php
 use Oliwol\Slugify\HasSlug;
@@ -105,6 +107,13 @@ class Post extends Model
     use HasSlug;
 }
 // "Hello World" → "hello_world"
+
+// SEO-safe — slug is only generated on creation, never updated
+#[Slugify(from: 'title', to: 'slug', regenerateOnUpdate: false)]
+class Post extends Model
+{
+    use HasSlug;
+}
 ```
 
 > **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
@@ -117,6 +126,8 @@ Alternatively, you can configure slug generation by overriding methods:
 * ```getRouteKeyName()``` — the slug column for route model binding (e.g. slug).
 * Optionally ```getAttributeToSaveSlugTo()``` — a different column to save the slug.
 * Optionally ```getSlugSeparator()``` — the separator character (default `'-'`).
+* Optionally ```getMaxSlugLength()``` — maximum slug length, truncated at word boundaries (default `null`).
+* Optionally ```shouldRegenerateSlugOnUpdate()``` — return `false` to only generate slugs on creation (default `true`).
 * Optionally override ```scopeSlugQuery()``` — scoping for uniqueness (e.g. per team).
 
 ```php
