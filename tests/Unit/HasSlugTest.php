@@ -6,8 +6,11 @@ use Illuminate\Database\QueryException;
 use Tests\Models\AuthorWithAttribute;
 use Tests\Models\AuthorWithMethod;
 use Tests\Models\Post;
+use Tests\Models\PostNoRegenerate;
+use Tests\Models\PostNoRegenerateMethod;
 use Tests\Models\PostWithCustomSeparator;
 use Tests\Models\PostWithMaxLength;
+use Tests\Models\PostWithMaxLengthMethod;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
 use Tests\Models\UserWithAttribute;
@@ -225,6 +228,13 @@ it('accounts for uniqueness suffix within max length', function (): void {
     expect(mb_strlen((string) $slug))->toBeLessThanOrEqual(15);
 });
 
+it('truncates slug via getMaxSlugLength method override', function (): void {
+    // maxLength: 10 via method, "hello-world" = 11 chars → truncate to "hello"
+    $post = PostWithMaxLengthMethod::create(['title' => 'Hello World']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello');
+});
+
 it('does not truncate when max length is null', function (): void {
     $user = UserHasRouteKeyName::create(['name' => 'This Is A Really Long Name That Should Not Be Truncated']);
 
@@ -244,4 +254,58 @@ it('handles truncation when single word exceeds remaining length', function (): 
 
     expect($post->fresh()->getAttribute('slug'))->toBe('ab');
     expect(mb_strlen((string) $post->fresh()->getAttribute('slug')))->toBeLessThanOrEqual(15);
+});
+
+// --- Regenerate on update ---
+
+it('generates slug on creation when regenerateOnUpdate is false', function (): void {
+    $post = PostNoRegenerate::create(['title' => 'Hello World']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world');
+});
+
+it('does not regenerate slug on update when regenerateOnUpdate is false', function (): void {
+    $post = PostNoRegenerate::create(['title' => 'Hello World']);
+
+    $post->setAttribute('title', 'Changed Title');
+    $post->save();
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world');
+});
+
+it('still regenerates slug on update when regenerateOnUpdate is true (default)', function (): void {
+    $post = PostWithCustomSeparator::create(['title' => 'Hello World']);
+
+    $post->setAttribute('title', 'Changed Title');
+    $post->save();
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('changed_title');
+});
+
+it('regenerates slug on update by default when using method override', function (): void {
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
+
+    $user->setAttribute('name', 'Jane Doe');
+    $user->save();
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('jane-doe');
+});
+
+it('respects manual slug changes even when regenerateOnUpdate is false', function (): void {
+    $post = PostNoRegenerate::create(['title' => 'Hello World']);
+
+    $post->setAttribute('title', 'Changed Title');
+    $post->setAttribute('slug', 'custom-slug');
+    $post->save();
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('custom-slug');
+});
+
+it('does not regenerate slug on update when shouldRegenerateSlugOnUpdate returns false via method override', function (): void {
+    $post = PostNoRegenerateMethod::create(['title' => 'Hello World']);
+
+    $post->setAttribute('title', 'Changed Title');
+    $post->save();
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world');
 });

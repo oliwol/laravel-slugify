@@ -46,6 +46,11 @@ trait HasSlug
             return;
         }
 
+        // Do not regenerate slug on update when disabled.
+        if (filled($this->{$target}) && ! $this->shouldRegenerateSlugOnUpdate()) {
+            return;
+        }
+
         $value = collect($sources)
             ->map(fn (string $field): ?string => $this->getAttribute($field))
             ->filter(fn (?string $field): bool => filled($field))
@@ -87,6 +92,17 @@ trait HasSlug
         }
 
         return null;
+    }
+
+    public function shouldRegenerateSlugOnUpdate(): bool
+    {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify) {
+            return $attribute->regenerateOnUpdate;
+        }
+
+        return true;
     }
 
     public function getSlugLanguage(): string
