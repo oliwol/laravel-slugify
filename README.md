@@ -213,6 +213,20 @@ When triggered, it will:
    2. The slug has been manually set and differs from the original.
 4. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
 
+## 🔎 Finding Models by Slug
+
+The trait provides two static methods to look up models by their slug:
+
+```php
+// Returns the model or null
+$post = Post::findBySlug('hello-world');
+
+// Returns the model or throws ModelNotFoundException
+$post = Post::findBySlugOrFail('hello-world');
+```
+
+Both methods respect the configured slug column (`to` / `getAttributeToSaveSlugTo()`) and apply `scopeSlugQuery()` for scoped lookups.
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).
