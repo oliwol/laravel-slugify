@@ -309,3 +309,61 @@ it('does not regenerate slug on update when shouldRegenerateSlugOnUpdate returns
 
     expect($post->fresh()->getAttribute('slug'))->toBe('hello-world');
 });
+
+// --- findBySlug / findBySlugOrFail ---
+
+it('finds a model by slug', function (): void {
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
+
+    $found = UserHasRouteKeyName::findBySlug('john-doe');
+
+    expect($found)->not->toBeNull();
+    expect($found->getKey())->toBe($user->getKey());
+});
+
+it('returns null when slug is not found', function (): void {
+    expect(UserHasRouteKeyName::findBySlug('nonexistent'))->toBeNull();
+});
+
+it('finds a model by slug or fails', function (): void {
+    $user = UserHasRouteKeyName::create(['name' => 'John Doe']);
+
+    $found = UserHasRouteKeyName::findBySlugOrFail('john-doe');
+
+    expect($found->getKey())->toBe($user->getKey());
+});
+
+it('throws ModelNotFoundException when slug is not found', function (): void {
+    UserHasRouteKeyName::findBySlugOrFail('nonexistent');
+})->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+it('findBySlug respects the configured slug column', function (): void {
+    $user = UserWithAttribute::create(['name' => 'Jane Doe']);
+
+    $found = UserWithAttribute::findBySlug('jane-doe');
+
+    expect($found)->not->toBeNull();
+    expect($found->getKey())->toBe($user->getKey());
+});
+
+it('findBySlug applies slug query scope', function (): void {
+    // Scope filters by tenant_id — on a fresh instance tenant_id is null,
+    // so only records with tenant_id = null are found.
+    UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 1]);
+    $unscoped = UserHasScope::create(['name' => 'Jane Doe', 'tenant_id' => null]);
+
+    $found = UserHasScope::findBySlug('jane-doe');
+
+    expect($found)->not->toBeNull();
+    expect($found->getKey())->toBe($unscoped->getKey());
+
+    // Record with tenant_id = 1 is not found due to scope
+    expect(UserHasScope::findBySlug('john-doe'))->toBeNull();
+});
+
+it('findBySlugOrFail applies slug query scope', function (): void {
+    UserHasScope::create(['name' => 'John Doe', 'tenant_id' => 1]);
+
+    // Record exists but scope filters it out — should throw
+    UserHasScope::findBySlugOrFail('john-doe');
+})->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);

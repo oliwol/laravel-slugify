@@ -13,6 +13,26 @@ use ReflectionClass;
 
 trait HasSlug
 {
+    public static function findBySlug(string $slug): ?static
+    {
+        $instance = new static;
+
+        return $instance->newQuery()
+            ->tap(fn (Builder $query) => $instance->scopeSlugQuery($query))
+            ->where($instance->getAttributeToSaveSlugTo(), $slug)
+            ->first();
+    }
+
+    public static function findBySlugOrFail(string $slug): static
+    {
+        $instance = new static;
+
+        return $instance->newQuery()
+            ->tap(fn (Builder $query) => $instance->scopeSlugQuery($query))
+            ->where($instance->getAttributeToSaveSlugTo(), $slug)
+            ->firstOrFail();
+    }
+
     /**
      * @return string|array<int, string>
      */
