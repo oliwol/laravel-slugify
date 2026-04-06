@@ -243,6 +243,96 @@ $post = Post::findBySlugOrFail('hello-world');
 
 Both methods respect the configured slug column (`to` / `getAttributeToSaveSlugTo()`) and apply `scopeSlugQuery()` for scoped lookups.
 
+## 📜 Slug History
+
+When slugs change (e.g. because a title was updated), old URLs break. The optional `HasSlugHistory` trait keeps track of previous slugs so you can implement 301 redirects from old URLs to new ones — critical for SEO.
+
+### Setup
+
+Publish and run the migration:
+
+```bash
+php artisan vendor:publish --tag=slugify-migrations
+php artisan migrate
+```
+
+This creates a `slug_history` table that stores old slugs with a polymorphic relation to your models.
+
+### Usage
+
+Add the `HasSlugHistory` trait alongside `HasSlug`:
+
+```php
+use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\HasSlugHistory;
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    use HasSlug, HasSlugHistory;
+}
+```
+
+When a slug changes, the old slug is automatically recorded in the `slug_history` table. Duplicate entries are prevented — if a model cycles back to a previous slug, it won't be stored again.
+
+### Finding models by current or historical slug
+
+Use `findBySlugWithHistory()` to look up a model by its current slug or any previous slug:
+
+```php
+$post = Post::create(['title' => 'Laravel Tips']);
+// slug: "laravel-tips"
+
+$post->update(['title' => 'Advanced Laravel Tips']);
+// slug: "advanced-laravel-tips"
+// history: ["laravel-tips"]
+
+// Find by current slug
+Post::findBySlugWithHistory('advanced-laravel-tips'); // → Post
+
+// Find by old slug (useful for 301 redirects)
+Post::findBySlugWithHistory('laravel-tips'); // → Post
+
+// Returns null if neither current nor historical slug matches
+Post::findBySlugWithHistory('nonexistent'); // → null
+```
+
+### Implementing 301 redirects
+
+A typical use case is redirecting old URLs to the current one in a controller:
+
+```php
+public function show(string $slug)
+{
+    $post = Post::findBySlugWithHistory($slug);
+
+    if (! $post) {
+        abort(404);
+    }
+
+    // If the slug doesn't match the current one, redirect
+    if ($post->slug !== $slug) {
+        return redirect()->route('posts.show', $post->slug, 301);
+    }
+
+    return view('posts.show', compact('post'));
+}
+```
+
+### Accessing slug history
+
+You can access all previous slugs of a model via the `slugHistory` relationship:
+
+```php
+$post->slugHistory; // Collection of SlugHistory entries
+
+$post->slugHistory->pluck('slug'); // ["old-slug", "older-slug"]
+
+// Each entry is timestamped
+$post->slugHistory->first()->created_at; // Carbon instance
+```
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 arch()->preset()->php();
 
-arch()->preset()->strict();
+arch()->preset()->strict()
+    ->ignoring(Oliwol\Slugify\SlugHistory::class);
 
 arch()->preset()->security();
 
@@ -27,11 +28,9 @@ arch('ensure no extends')
     ->not->toBeAbstract();
 
 arch('avoid mutation')
-    ->expect('Oliwol\Slugify')
-    ->classes()
+    ->expect(Oliwol\Slugify\Slugify::class)
     ->toBeReadonly();
 
 arch('avoid inheritance')
-    ->expect('Oliwol\Slugify')
-    ->classes()
+    ->expect(Oliwol\Slugify\Slugify::class)
     ->toExtendNothing();
