@@ -333,6 +333,53 @@ $post->slugHistory->pluck('slug'); // ["old-slug", "older-slug"]
 $post->slugHistory->first()->created_at; // Carbon instance
 ```
 
+## 📡 Events
+
+The package dispatches events during the slug lifecycle, allowing you to hook in for logging, cache invalidation, or redirect management.
+
+### Available events
+
+| Event | Dispatched when | Properties |
+|---|---|---|
+| `Oliwol\Slugify\Events\SlugGenerated` | A slug is created for the first time | `$model`, `$slug` |
+| `Oliwol\Slugify\Events\SlugUpdated` | An existing slug changes to a new value | `$model`, `$oldSlug`, `$newSlug` |
+
+Events are **only** dispatched when the slug actually changes — if a save results in the same slug value, no event is fired.
+
+### Listening to events
+
+Register listeners in your `EventServiceProvider` or use closures:
+
+```php
+use Oliwol\Slugify\Events\SlugGenerated;
+use Oliwol\Slugify\Events\SlugUpdated;
+
+// In EventServiceProvider::$listen or via Event::listen()
+Event::listen(SlugGenerated::class, function (SlugGenerated $event) {
+    Log::info("Slug created: {$event->slug}", [
+        'model' => get_class($event->model),
+        'id' => $event->model->getKey(),
+    ]);
+});
+
+Event::listen(SlugUpdated::class, function (SlugUpdated $event) {
+    Log::info("Slug changed: {$event->oldSlug} → {$event->newSlug}", [
+        'model' => get_class($event->model),
+        'id' => $event->model->getKey(),
+    ]);
+
+    // Example: create a redirect entry
+    Redirect::create([
+        'from' => $event->oldSlug,
+        'to' => $event->newSlug,
+    ]);
+});
+```
+
+### Combining with Slug History
+
+When using both `HasSlugHistory` and events, the slug history is recorded automatically by the trait while events give you additional flexibility for custom logic. They work independently and can be used together or separately.
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).
