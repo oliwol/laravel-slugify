@@ -54,11 +54,16 @@ trait HasSlug
     {
         $source = $this->getAttributeToCreateSlugFrom();
         $target = $this->getAttributeToSaveSlugTo();
-        $sources = (array) $source;
+        $usesMethod = is_string($source) && method_exists($this, $source);
 
-        // There are no changes to any source attribute; no need to recreate the slug.
-        if (! $this->isDirty($sources)) {
-            return;
+        // When using a method source, skip dirty detection (dependencies are unknown).
+        if (! $usesMethod) {
+            $sources = (array) $source;
+
+            // There are no changes to any source attribute; no need to recreate the slug.
+            if (! $this->isDirty($sources)) {
+                return;
+            }
         }
 
         // Do not override manually set slugs.
@@ -71,10 +76,15 @@ trait HasSlug
             return;
         }
 
-        $value = collect($sources)
-            ->map(fn (string $field): ?string => $this->getAttribute($field))
-            ->filter(fn (?string $field): bool => filled($field))
-            ->implode(' ');
+        if ($usesMethod) {
+            $value = $this->{$source}();
+        } else {
+            $sources = (array) $source;
+            $value = collect($sources)
+                ->map(fn (string $field): ?string => $this->getAttribute($field))
+                ->filter(fn (?string $field): bool => filled($field))
+                ->implode(' ');
+        }
 
         $this->{$target} = $this->incrementSlugIfExists(
             slug: $this->slugify($value)
@@ -149,14 +159,20 @@ trait HasSlug
 
     public function isSluggable(): bool
     {
-        $sources = (array) $this->getAttributeToCreateSlugFrom();
+        $source = $this->getAttributeToCreateSlugFrom();
 
         // Ensure that the route key name is different from the primary key name.
         if ($this->getAttributeToSaveSlugTo() === $this->getKeyName()) {
             return false;
         }
 
+        // When source resolves to a method, delegate to the method result.
+        if (is_string($source) && method_exists($this, $source)) {
+            return filled($this->{$source}());
+        }
+
         // Ensure that at least one source attribute exists and has a filled string value.
+        $sources = (array) $source;
         $hasFilledSource = false;
 
         foreach ($sources as $from) {

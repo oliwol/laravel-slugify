@@ -6,7 +6,7 @@
 
 A tiny trait that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
 
-Attach it to a model, define the source attribute, and the trait quietly handles generation, updates and uniqueness.
+Attach it to a model, define the source (an attribute, multiple attributes, or a method), and the trait quietly handles generation, updates and uniqueness.
 
 ---
 
@@ -63,7 +63,7 @@ Add the ```HasSlug``` trait to any Eloquent model where a slug should be automat
 
 The `#[Slugify]` attribute accepts the following parameters:
 
-* `from` (required) — the attribute(s) used to generate the slug. Accepts a single string (e.g. `'name'`) or an array of strings (e.g. `['first_name', 'last_name']`).
+* `from` (required) — the source for the slug. Accepts a single attribute name (e.g. `'name'`), an array of attribute names (e.g. `['first_name', 'last_name']`), or a method name on the model (e.g. `'getFullTitle'`). When a method name is given, it is called to produce the slug string and dirty detection is skipped (the slug is always regenerated on save).
 * `to` (optional) — the column to save the slug to. Falls back to `getRouteKeyName()` if omitted.
 * `separator` (optional) — the character used to separate words in the slug. Defaults to `'-'`.
 * `maxLength` (optional) — maximum number of characters for the slug. Truncates at word boundaries. Defaults to `null` (no limit).
@@ -107,6 +107,20 @@ class Post extends Model
     use HasSlug;
 }
 // "Hello World" → "hello_world"
+
+// Method source — use a model method for complex slug generation
+#[Slugify(from: 'getFullTitle', to: 'slug')]
+class Post extends Model
+{
+    use HasSlug;
+
+    public function getFullTitle(): string
+    {
+        return $this->category->name . ' ' . $this->title;
+    }
+}
+// category: "Tech", title: "Laravel Tips" → "tech-laravel-tips"
+// Note: dirty detection is skipped — the slug is always regenerated on save.
 
 // SEO-safe — slug is only generated on creation, never updated
 #[Slugify(from: 'title', to: 'slug', regenerateOnUpdate: false)]
@@ -206,11 +220,13 @@ protected static function bootHasSlug(): void
 
 When triggered, it will:
 
-1. Resolve the source attribute(s) — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override. Supports a single attribute or multiple attributes.
-2. Generate a slug by combining filled source values (null/empty values are skipped).
+1. Resolve the source — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override. Supports a single attribute, multiple attributes, or a model method name.
+2. Generate a slug — if the source is a method, call it; otherwise combine filled attribute values (null/empty values are skipped).
 3. Skip regeneration if:
-   1. None of the source attributes are dirty (unchanged), or
+   1. Using attribute source(s) and none are dirty (unchanged), or
    2. The slug has been manually set and differs from the original.
+   
+   > **Note**: When using a method source, dirty detection is skipped — the slug is always regenerated on save, since the trait cannot track the method's dependencies.
 4. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
 
 ## 🔎 Finding Models by Slug
