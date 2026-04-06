@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use LogicException;
+use Oliwol\Slugify\Events\SlugGenerated;
+use Oliwol\Slugify\Events\SlugUpdated;
 use ReflectionAttribute;
 use ReflectionClass;
 
@@ -86,9 +88,20 @@ trait HasSlug
                 ->implode(' ');
         }
 
-        $this->{$target} = $this->incrementSlugIfExists(
+        $oldSlug = $this->getOriginal($target);
+        $newSlug = $this->incrementSlugIfExists(
             slug: $this->slugify($value)
         );
+
+        $this->{$target} = $newSlug;
+
+        if (filled($oldSlug)) {
+            if ($oldSlug !== $newSlug) {
+                event(new SlugUpdated($this, $oldSlug, $newSlug));
+            }
+        } else {
+            event(new SlugGenerated($this, $newSlug));
+        }
     }
 
     public function getAttributeToSaveSlugTo(): string
