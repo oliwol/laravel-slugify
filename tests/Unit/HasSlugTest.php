@@ -11,6 +11,7 @@ use Tests\Models\PostNoRegenerateMethod;
 use Tests\Models\PostWithCustomSeparator;
 use Tests\Models\PostWithMaxLength;
 use Tests\Models\PostWithMaxLengthMethod;
+use Tests\Models\PostWithMethodSource;
 use Tests\Models\UserHasRouteKeyName;
 use Tests\Models\UserHasScope;
 use Tests\Models\UserWithAttribute;
@@ -359,6 +360,38 @@ it('findBySlug applies slug query scope', function (): void {
 
     // Record with tenant_id = 1 is not found due to scope
     expect(UserHasScope::findBySlug('john-doe'))->toBeNull();
+});
+
+// --- Method source ---
+
+it('creates a slug from a method source', function (): void {
+    $post = PostWithMethodSource::create(['title' => 'Hello World']);
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world-post');
+});
+
+it('always regenerates slug when using a method source even without dirty attributes', function (): void {
+    $post = PostWithMethodSource::create(['title' => 'Hello World']);
+
+    // Manually change the slug to verify it gets overwritten on next save,
+    // even though no source attribute is dirty.
+    $post->slug = null;
+    $post->saveQuietly();
+
+    expect($post->fresh()->getAttribute('slug'))->toBeNull();
+
+    // Re-fetch and save — no attribute is dirty, but method source should still regenerate.
+    $post = $post->fresh();
+    $post->save();
+
+    expect($post->fresh()->getAttribute('slug'))->toBe('hello-world-post');
+});
+
+it('falls back to attribute access when no matching method exists', function (): void {
+    // 'name' in #[Slugify(from: 'name')] is not a method, so attribute access is used.
+    $user = UserWithAttribute::create(['name' => 'Jane Doe']);
+
+    expect($user->fresh()->getAttribute('slug'))->toBe('jane-doe');
 });
 
 it('findBySlugOrFail applies slug query scope', function (): void {
