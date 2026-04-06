@@ -4,8 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Models;
 
-final class UserWithoutRouteKeyName extends User
+use Illuminate\Database\Eloquent\Model;
+use Oliwol\Slugify\HasSlug;
+
+final class UserWithoutRouteKeyName extends Model
 {
+    use HasSlug;
+
+    public $timestamps = false;
+
+    protected $table = 'users';
+
+    protected $guarded = [];
+
     public function getAttributeToCreateSlugFrom(): string
     {
         return 'name';
