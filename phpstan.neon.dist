@@ -8,6 +8,9 @@ parameters:
             -
                 message: '#Trait Oliwol\\Slugify\\HasSlug is used zero times and is not analysed.#'
                 path: src/HasSlug.php
+            -
+                message: '#Trait Oliwol\\Slugify\\HasSlugHistory is used zero times and is not analysed.#'
+                path: src/HasSlugHistory.php
 
     paths:
         - src

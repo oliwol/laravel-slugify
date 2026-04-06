@@ -47,6 +47,13 @@
             "@test:unit"
         ]
     },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Oliwol\\Slugify\\SlugifyServiceProvider"
+            ]
+        }
+    },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {

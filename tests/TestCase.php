@@ -34,5 +34,14 @@ abstract class TestCase extends Orchestra
             $table->string('title')->nullable();
             $table->string('slug')->nullable();
         });
+
+        Schema::create('slug_history', function (Blueprint $table): void {
+            $table->id();
+            $table->string('slug');
+            $table->morphs('sluggable');
+            $table->timestamp('created_at')->nullable();
+
+            $table->unique(['slug', 'sluggable_type']);
+        });
     }
 }
