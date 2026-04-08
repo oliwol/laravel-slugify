@@ -333,6 +333,108 @@ $post->slugHistory->pluck('slug'); // ["old-slug", "older-slug"]
 $post->slugHistory->first()->created_at; // Carbon instance
 ```
 
+## 🌍 Translatable Slugs
+
+For multilingual applications, the optional `HasTranslatableSlug` trait integrates with [`spatie/laravel-translatable`](https://github.com/spatie/laravel-translatable) to generate one slug per locale (e.g. `/en/hello-world` and `/de/hallo-welt`).
+
+### Setup
+
+Install spatie/laravel-translatable:
+
+```bash
+composer require spatie/laravel-translatable
+```
+
+In your migration, define the source and slug columns as `json`:
+
+```php
+Schema::create('posts', function (Blueprint $table) {
+    $table->id();
+    $table->json('title')->nullable();
+    $table->json('slug')->nullable();
+});
+```
+
+### Usage
+
+Use `HasTranslatableSlug` instead of `HasSlug` and add spatie's `HasTranslations` trait:
+
+```php
+use Oliwol\Slugify\HasTranslatableSlug;
+use Oliwol\Slugify\Slugify;
+use Spatie\Translatable\HasTranslations;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    use HasTranslations, HasTranslatableSlug;
+
+    public array $translatable = ['title', 'slug'];
+}
+```
+
+### Generating slugs per locale
+
+When the model is saved, a slug is generated for **each locale** that has a value in the source attribute:
+
+```php
+$post = Post::create([
+    'title' => ['en' => 'Hello World', 'de' => 'Hallo Welt'],
+]);
+
+$post->getTranslation('slug', 'en'); // → 'hello-world'
+$post->getTranslation('slug', 'de'); // → 'hallo-welt'
+```
+
+### Per-locale uniqueness
+
+Uniqueness is checked **per locale** using JSON-path queries. Two models can share the same English slug as long as their other locales differ — but within a single locale, suffixes are appended:
+
+```php
+Post::create(['title' => ['en' => 'Hello', 'de' => 'Erster']]);
+$second = Post::create(['title' => ['en' => 'Hello', 'de' => 'Zweiter']]);
+
+$second->getTranslation('slug', 'en'); // → 'hello-2'  (incremented)
+$second->getTranslation('slug', 'de'); // → 'zweiter'  (untouched)
+```
+
+### Finding models by translated slug
+
+`findBySlug()` accepts an optional `$locale` parameter (defaults to `app()->getLocale()`):
+
+```php
+Post::findBySlug('hello-world', 'en'); // → Post
+Post::findBySlug('hallo-welt', 'de');  // → same Post
+
+// Without explicit locale, uses the current app locale:
+app()->setLocale('de');
+Post::findBySlug('hallo-welt'); // → Post
+```
+
+### Method sources
+
+Method sources work too — the method is called once per locale with the locale context active:
+
+```php
+#[Slugify(from: 'getFullTitle', to: 'slug')]
+class Post extends Model
+{
+    use HasTranslations, HasTranslatableSlug;
+
+    public array $translatable = ['title', 'slug'];
+
+    public function getFullTitle(): string
+    {
+        // $this->getLocale() reflects the current locale being generated.
+        return 'post-' . $this->getTranslation('title', $this->getLocale(), false);
+    }
+}
+```
+
+> **Note**: When using a method source with `HasTranslatableSlug`, the available locales are gathered from all translatable attributes on the model (excluding the slug target). For attribute sources, locales come from the source attribute itself.
+
+> **Limitation**: `HasTranslatableSlug` only supports a **single attribute name** or a **method name** as source. Array sources (e.g. `from: ['first_name', 'last_name']`) are not supported — use a method source instead to combine multiple translatable values.
+
 ## 📡 Events
 
 The package dispatches events during the slug lifecycle, allowing you to hook in for logging, cache invalidation, or redirect management.

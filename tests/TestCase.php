@@ -43,5 +43,11 @@ abstract class TestCase extends Orchestra
 
             $table->unique(['slug', 'sluggable_type']);
         });
+
+        Schema::create('posts_translatable', function (Blueprint $table): void {
+            $table->id();
+            $table->json('title')->nullable();
+            $table->json('slug')->nullable();
+        });
     }
 }
