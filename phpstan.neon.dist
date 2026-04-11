@@ -11,6 +11,9 @@ parameters:
             -
                 message: '#Trait Oliwol\\Slugify\\HasSlugHistory is used zero times and is not analysed.#'
                 path: src/HasSlugHistory.php
+            -
+                message: '#Trait Oliwol\\Slugify\\HasTranslatableSlug is used zero times and is not analysed.#'
+                path: src/HasTranslatableSlug.php
 
     paths:
         - src

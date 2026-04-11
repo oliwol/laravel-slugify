@@ -27,8 +27,9 @@
         "laravel/pint": "^v1.25.0",
         "orchestra/testbench": "^v10.0|^v11.0",
         "pestphp/pest": "^v4.0",
+        "phpstan/phpstan": "^2.0",
         "rector/rector": "^2.0",
-        "phpstan/phpstan": "^2.0"
+        "spatie/laravel-translatable": "^6.13"
     },
     "scripts": {
         "lint": "./vendor/bin/pint",
@@ -46,6 +47,9 @@
             "@test:arch",
             "@test:unit"
         ]
+    },
+    "suggest": {
+        "spatie/laravel-translatable": "Required for the HasTranslatableSlug trait to generate slugs per locale (^6.13)."
     },
     "extra": {
         "laravel": {
