@@ -11,3 +11,6 @@ Thumbs.db
 /.vscode
 CLAUDE.md
 /.claude
+docs/node_modules
+docs/.vitepress/dist
+docs/.vitepress/cache

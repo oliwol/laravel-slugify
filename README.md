@@ -4,6 +4,8 @@
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/oliwol/laravel-slugify/.github/workflows/tests.yml?branch=1.x&label=tests&style=flat-square)](https://github.com/oliwol/laravel-slugify/actions)
 [![License](https://img.shields.io/packagist/l/oliwol/laravel-slugify.svg?style=flat-square)](https://github.com/oliwol/laravel-slugify/blob/1.x/LICENSE)
 
+**[Documentation](https://oliwol.github.io/laravel-slugify/)**
+
 A tiny trait that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
 
 Attach it to a model, define the source (an attribute, multiple attributes, or a method), and the trait quietly handles generation, updates and uniqueness.
