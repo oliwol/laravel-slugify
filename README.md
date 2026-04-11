@@ -482,6 +482,38 @@ Event::listen(SlugUpdated::class, function (SlugUpdated $event) {
 
 When using both `HasSlugHistory` and events, the slug history is recorded automatically by the trait while events give you additional flexibility for custom logic. They work independently and can be used together or separately.
 
+## 🔧 Artisan Command
+
+The package provides an Artisan command to generate or regenerate slugs for existing database records — useful when adding the package to an existing project or after changing slug configuration.
+
+### Generate missing slugs
+
+```bash
+php artisan slugify:generate "App\Models\Post"
+```
+
+This processes all records where the slug column is `null` or empty, generates a slug from the configured source attribute(s), and saves the result. Records that already have a slug are skipped.
+
+### Overwrite existing slugs
+
+Use `--force` to regenerate slugs for **all** records, including those that already have one:
+
+```bash
+php artisan slugify:generate "App\Models\Post" --force
+```
+
+### Preview changes
+
+Use `--dry-run` to see how many slugs would be generated without actually saving anything:
+
+```bash
+php artisan slugify:generate "App\Models\Post" --dry-run
+```
+
+### Performance
+
+The command processes records in chunks of 200 and displays a progress bar, making it safe to use on large datasets without running into memory issues.
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).

@@ -7,9 +7,20 @@ namespace Tests;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Oliwol\Slugify\SlugifyServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
+    /**
+     * @return list<class-string>
+     */
+    protected function getPackageProviders($app): array
+    {
+        return [
+            SlugifyServiceProvider::class,
+        ];
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
