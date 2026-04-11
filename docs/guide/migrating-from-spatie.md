@@ -152,6 +152,48 @@ class Post extends Model
 
 5. **Test your application** — existing slugs in the database are not affected
 
+## Common Gotchas
+
+### Closure sources become methods
+
+Spatie allows inline closures for slug generation. Laravel Slugify uses named methods instead — reference the method name as a string in `from`:
+
+```php
+// Spatie: closure
+->generateSlugsFrom(fn ($model) => $model->title . '-' . $model->id)
+
+// Slugify: named method
+#[Slugify(from: 'getSlugSource', to: 'slug')]
+
+public function getSlugSource(): string
+{
+    return $this->title . '-' . $this->id;
+}
+```
+
+### `getSlugOptions()` must be removed
+
+If you keep the old `getSlugOptions()` method alongside `#[Slugify]`, the method won't be called — it's a Spatie-specific convention. Remove it to avoid confusion.
+
+### Scoping works differently
+
+Spatie has no built-in scoping for uniqueness. If you used custom query logic, use `scopeSlugQuery()`:
+
+```php
+public function scopeSlugQuery($query)
+{
+    return $query->where('tenant_id', $this->tenant_id);
+}
+```
+
+### Existing database slugs are preserved
+
+Switching packages does **not** affect existing slugs in your database. The new trait only generates slugs on save. To regenerate all slugs with the new configuration, use the Artisan command:
+
+```bash
+php artisan slugify:generate "App\Models\Post" --force
+```
+
 ## Feature Comparison
 
 | Feature | spatie/laravel-sluggable | oliwol/laravel-slugify |
