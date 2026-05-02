@@ -136,6 +136,71 @@ Post::findBySlug('hallo-welt', 'de');
 Post::findBySlug('hello-world'); // uses current app locale
 ```
 
+## SlugRule
+
+A validation rule for checking slug uniqueness in form requests.
+
+```php
+use Oliwol\Slugify\Rules\SlugRule;
+```
+
+### Constructor
+
+#### `new SlugRule(string $modelClass)`
+
+Create a new rule for the given model class.
+
+```php
+new SlugRule(Post::class)
+```
+
+### Static Methods
+
+#### `SlugRule::for(string $modelClass): static`
+
+Fluent alternative to the constructor.
+
+```php
+SlugRule::for(Post::class)
+```
+
+### Instance Methods
+
+#### `ignore(Model $model): static`
+
+Exclude a specific model from the uniqueness check. Use this for update scenarios so the model's own slug does not trigger a failure.
+
+```php
+SlugRule::for(Post::class)->ignore($this->post)
+```
+
+#### `scope(string $column, mixed $value): static`
+
+Add an extra `WHERE` constraint to the uniqueness check. Chainable.
+
+```php
+SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id)
+```
+
+### Behaviour
+
+- Uses the model's configured slug column (`to` / `getAttributeToSaveSlugTo()`)
+- Calls `scopeSlugQuery()` automatically when the model defines it
+- Provides a translatable error message via `slugify::validation.slug_unique`
+
+### Examples
+
+```php
+// Create
+'slug' => ['required', 'string', new SlugRule(Post::class)]
+
+// Update
+'slug' => ['required', 'string', SlugRule::for(Post::class)->ignore($this->post)]
+
+// Scoped create
+'slug' => ['required', 'string', SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id)]
+```
+
 ## Events
 
 ### `Oliwol\Slugify\Events\SlugGenerated`

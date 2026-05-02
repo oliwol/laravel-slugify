@@ -207,6 +207,44 @@ public function scopeSlugQuery($query)
 
 This appends a `WHERE tenant_id = ?` clause when checking for existing slugs and when using `findBySlug()`.
 
+## Validation
+
+When users can manually edit slugs, use `SlugRule` to validate uniqueness in form requests — respecting the configured slug column and scoping automatically.
+
+```php
+use Oliwol\Slugify\Rules\SlugRule;
+
+// Basic — create scenario
+public function rules(): array
+{
+    return [
+        'slug' => ['required', 'string', new SlugRule(Post::class)],
+    ];
+}
+
+// Update — ignore the current model so its own slug passes
+public function rules(): array
+{
+    return [
+        'slug' => ['required', 'string', SlugRule::for(Post::class)->ignore($this->post)],
+    ];
+}
+
+// Scoped — additionally constrain by a column value
+public function rules(): array
+{
+    return [
+        'slug' => [
+            'required',
+            'string',
+            SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id),
+        ],
+    ];
+}
+```
+
+`SlugRule` uses the model's configured slug column and applies `scopeSlugQuery()` automatically. See the [API Reference](/api/reference#slugrule) for all options.
+
 ## Artisan Command
 
 Generate or regenerate slugs for existing database records:
