@@ -11,6 +11,8 @@ final class SlugifyServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'slugify');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SlugifyGenerateCommand::class,
