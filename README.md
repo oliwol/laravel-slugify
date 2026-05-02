@@ -516,6 +516,44 @@ php artisan slugify:generate "App\Models\Post" --dry-run
 
 The command processes records in chunks of 200 and displays a progress bar, making it safe to use on large datasets without running into memory issues.
 
+## ✅ Validation
+
+When users can manually edit slugs, use `SlugRule` to validate uniqueness in form requests — respecting the configured slug column and scoping automatically.
+
+```php
+use Oliwol\Slugify\Rules\SlugRule;
+
+// Basic — create scenario
+public function rules(): array
+{
+    return [
+        'slug' => ['required', 'string', new SlugRule(Post::class)],
+    ];
+}
+
+// Update — ignore the current model so its own slug passes
+public function rules(): array
+{
+    return [
+        'slug' => ['required', 'string', SlugRule::for(Post::class)->ignore($this->post)],
+    ];
+}
+
+// Scoped — additionally constrain by a column value
+public function rules(): array
+{
+    return [
+        'slug' => [
+            'required',
+            'string',
+            SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id),
+        ],
+    ];
+}
+```
+
+`SlugRule` uses the model's configured slug column (`to` / `getAttributeToSaveSlugTo()`) and applies `scopeSlugQuery()` automatically. Use `->ignore($model)` for update scenarios and `->scope($column, $value)` for additional constraints.
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).
