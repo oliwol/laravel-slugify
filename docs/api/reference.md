@@ -136,6 +136,42 @@ Post::findBySlug('hallo-welt', 'de');
 Post::findBySlug('hello-world'); // uses current app locale
 ```
 
+## `withSlug()` Factory Macro
+
+A macro registered on `Illuminate\Database\Eloquent\Factories\Factory` that controls slug generation in test factories.
+
+```php
+Factory::withSlug(?string $slug = null): static
+```
+
+Available on all factories for models that use `HasSlug`. Registered automatically by the service provider.
+
+### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$slug` | `?string` | Optional custom slug. If omitted, the slug is generated from the configured source attribute. |
+
+### Examples
+
+```php
+// Unsaved model with auto-generated slug
+Post::factory()->withSlug()->make();
+
+// Unsaved model with custom slug
+Post::factory()->withSlug('my-slug')->make();
+
+// Batch creation with unique slugs
+Post::factory()->count(3)->withSlug()->create();
+// → "hello-world", "hello-world-2", "hello-world-3"
+```
+
+### Behaviour
+
+- For `make()`: generates the slug immediately without saving
+- For `create()`: lets the `saving` event handle uniqueness sequentially, producing correct incremented slugs in batch scenarios
+- Models without `HasSlug` are silently skipped
+
 ## SlugRule
 
 A validation rule for checking slug uniqueness in form requests.

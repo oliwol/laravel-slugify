@@ -245,6 +245,27 @@ public function rules(): array
 
 `SlugRule` uses the model's configured slug column and applies `scopeSlugQuery()` automatically. See the [API Reference](/api/reference#slugrule) for all options.
 
+## Testing with Factories
+
+Slugs are generated automatically via the `saving` hook when using `create()` in factories. For `make()` — which does not persist the model — no slug is generated. Use the `withSlug()` macro when you need a slug on an unsaved model:
+
+```php
+// No slug on make() by default
+$post = Post::factory()->make(); // slug: null
+
+// Generate slug on make()
+$post = Post::factory()->withSlug()->make(); // slug: "hello-world"
+
+// Custom slug
+$post = Post::factory()->withSlug('my-custom-slug')->make();
+
+// Batch creation — slugs are unique
+$posts = Post::factory()->count(3)->withSlug()->create();
+// → "hello-world", "hello-world-2", "hello-world-3"
+```
+
+The macro is registered automatically and works with any factory for a model using `HasSlug`.
+
 ## Artisan Command
 
 Generate or regenerate slugs for existing database records:

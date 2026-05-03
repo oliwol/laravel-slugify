@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Oliwol\Slugify;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Oliwol\Slugify\Console\SlugifyGenerateCommand;
 
@@ -18,6 +20,27 @@ final class SlugifyServiceProvider extends ServiceProvider
                 SlugifyGenerateCommand::class,
             ]);
         }
+
+        Factory::macro('withSlug', function (?string $slug = null) {
+            /** @var Factory<Model> $this */
+            return $this->afterMaking(function (Model $model) use ($slug): void {
+                if (! in_array(HasSlug::class, class_uses_recursive($model), true)) {
+                    return;
+                }
+
+                /** @var string $slugColumn */
+                $slugColumn = $model->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+
+                if ($slug !== null) {
+                    $model->setAttribute($slugColumn, $slug);
+                } else {
+                    $model->createSlug(); // @phpstan-ignore method.notFound
+                    // Sync only the slug column so the saving event still fires and
+                    // re-checks DB uniqueness sequentially during batch creates.
+                    $model->syncOriginalAttribute($slugColumn);
+                }
+            });
+        });
 
         $this->publishes([
             __DIR__.'/../database/migrations/create_slug_history_table.php.stub' => database_path(
