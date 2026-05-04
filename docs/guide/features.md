@@ -69,6 +69,47 @@ $post = Post::findBySlugOrFail('hello-world');
 
 Both methods respect the configured slug column and apply `scopeSlugQuery()` for scoped lookups.
 
+## Route Model Binding
+
+Enable automatic route model binding via the slug column with `routeBinding: true`:
+
+```php
+#[Slugify(from: 'title', to: 'slug', routeBinding: true)]
+class Post extends Model
+{
+    use HasSlug;
+}
+```
+
+With `routeBinding: true`, `getRouteKeyName()` automatically returns the slug column. Your routes resolve by slug without any manual override:
+
+```php
+// routes/web.php
+Route::get('/posts/{post}', [PostController::class, 'show']);
+
+// Controller
+public function show(Post $post): View
+{
+    // Laravel resolves the Post by slug, not by id
+    return view('posts.show', compact('post'));
+}
+```
+
+::: warning Requires `to:`
+`routeBinding: true` only takes effect when `to:` is explicitly set. Without it, `getRouteKeyName()` falls back to the primary key.
+:::
+
+### Overriding dynamically
+
+Override `shouldUseSlugForRouteBinding()` when you need dynamic logic instead of a static attribute flag:
+
+```php
+public function shouldUseSlugForRouteBinding(): bool
+{
+    return config('app.slug_routing', true);
+}
+```
+
 ## Slug History
 
 Track previous slugs for SEO-friendly 301 redirects. First, publish and run the migration:
