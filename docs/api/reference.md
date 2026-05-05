@@ -4,13 +4,16 @@
 
 ```php
 #[Slugify(
-    from: 'title',           // string|array — required
-    to: 'slug',              // ?string — default: getRouteKeyName()
-    separator: '-',          // ?string — default: '-'
-    maxLength: null,         // ?int — default: null (no limit)
-    regenerateOnUpdate: true // bool — default: true
+    from: 'title',            // string|array — required
+    to: 'slug',               // ?string — default: getRouteKeyName()
+    separator: '-',           // ?string — default: '-'
+    maxLength: null,          // ?int — default: null (no limit)
+    regenerateOnUpdate: true, // bool — default: true
+    routeBinding: false,      // bool — default: false
 )]
 ```
+
+When `routeBinding: true` is set (and `to` is specified), `getRouteKeyName()` returns the slug column so Laravel resolves route parameters by slug automatically.
 
 ## HasSlug Trait
 
@@ -59,6 +62,14 @@ Ensure the slug is unique by appending an incrementing suffix if needed.
 #### `truncateSlug(string $slug, int $reservedLength = 0): string`
 
 Truncate the slug at word boundaries to fit within the max length.
+
+#### `getRouteKeyName(): string`
+
+Return the route key name. When `routeBinding: true` is configured and `to` is set, returns the slug column. Otherwise delegates to the model's primary key.
+
+#### `shouldUseSlugForRouteBinding(): bool`
+
+Return whether the model is configured to use the slug column for route model binding.
 
 ### Overridable Methods
 
@@ -199,6 +210,77 @@ SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id)
 
 // Scoped create
 'slug' => ['required', 'string', SlugRule::for(Post::class)->scope('tenant_id', auth()->user()->tenant_id)]
+```
+
+## SlugFormat
+
+A validation rule for checking that a value is a valid slug format.
+
+```php
+use Oliwol\Slugify\Rules\SlugFormat;
+```
+
+### Constructor
+
+#### `new SlugFormat(string $separator = '-')`
+
+Create a new format rule with the given separator (default: `-`).
+
+### Behaviour
+
+Validates that the value:
+- Contains only lowercase letters (`a–z`), numbers (`0–9`), and the separator
+- Does not start or end with the separator
+- Does not contain consecutive separators
+
+Fails for non-string values, empty strings, uppercase letters, or special characters.
+
+### Examples
+
+```php
+// Default separator
+'slug' => ['required', new SlugFormat()]
+
+// Custom separator
+'slug' => ['required', new SlugFormat(separator: '_')]
+
+// Combined format + uniqueness check
+'slug' => ['required', new SlugFormat(), new SlugRule(Post::class)]
+```
+
+## SlugRedirectMiddleware
+
+Automatically redirects requests using a historical slug to the current canonical URL. Registered under the alias `slug.redirect`.
+
+### Usage
+
+```php
+Route::get('/posts/{post:slug}', PostController::class)
+    ->middleware(['slug.redirect']);
+```
+
+Requires `HasSlugHistory` on the bound model and `SubstituteBindings` in the middleware stack (included in Laravel's default `web` group).
+
+### Behaviour
+
+- Compares the URL slug against the model's current slug after route model binding
+- If they differ, issues a redirect to the URL with the current slug
+- Preserves the query string on redirect
+- Passes through unchanged for models without `HasSlugHistory`
+
+### Configuration
+
+The redirect status code defaults to `301` and can be changed by publishing the config:
+
+```bash
+php artisan vendor:publish --tag=slugify-config
+```
+
+```php
+// config/slugify.php
+return [
+    'redirect_status' => 301,
+];
 ```
 
 ## Events

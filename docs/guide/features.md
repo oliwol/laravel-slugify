@@ -69,6 +69,27 @@ $post = Post::findBySlugOrFail('hello-world');
 
 Both methods respect the configured slug column and apply `scopeSlugQuery()` for scoped lookups.
 
+## Route Model Binding
+
+Use `routeBinding: true` in the `#[Slugify]` attribute to automatically configure route model binding by the slug column — no need to manually override `getRouteKeyName()`:
+
+```php
+#[Slugify(from: 'title', to: 'slug', routeBinding: true)]
+class Post extends Model
+{
+    use HasSlug;
+}
+```
+
+Laravel will now resolve `{post}` route parameters by slug automatically:
+
+```php
+Route::get('/posts/{post}', PostController::class);
+// GET /posts/hello-world → resolves Post where slug = 'hello-world'
+```
+
+Without `routeBinding: true`, route model binding uses the primary key by default.
+
 ## Slug History
 
 Track previous slugs for SEO-friendly 301 redirects. First, publish and run the migration:
@@ -99,6 +120,17 @@ $post = Post::findBySlugWithHistory('old-slug');
 ```
 
 ### Implementing 301 redirects
+
+The easiest approach is the `slug.redirect` middleware. Add it to any route that uses `HasSlugHistory` — it automatically detects a stale slug in the URL and issues a redirect to the current one, preserving the query string:
+
+```php
+Route::get('/posts/{post:slug}', PostController::class)
+    ->middleware(['slug.redirect']);
+```
+
+No controller code required. The redirect status defaults to `301` and is configurable via `config/slugify.php` (publish with `php artisan vendor:publish --tag=slugify-config`).
+
+Alternatively, handle the redirect manually in the controller:
 
 ```php
 public function show(string $slug)
@@ -209,7 +241,30 @@ This appends a `WHERE tenant_id = ?` clause when checking for existing slugs and
 
 ## Validation
 
-When users can manually edit slugs, use `SlugRule` to validate uniqueness in form requests — respecting the configured slug column and scoping automatically.
+The package provides two complementary validation rules:
+
+- **`SlugFormat`** — checks that a string is a valid slug (format)
+- **`SlugRule`** — checks that a slug doesn't already exist in the database (uniqueness)
+
+### Format validation
+
+Use `SlugFormat` to reject invalid slug strings before they reach the database:
+
+```php
+use Oliwol\Slugify\Rules\SlugFormat;
+
+'slug' => ['required', new SlugFormat()],
+```
+
+`SlugFormat` validates that the value is lowercase, contains only alphanumeric characters and the separator, and has no leading, trailing, or consecutive separators. A custom separator can be passed:
+
+```php
+'slug' => ['required', new SlugFormat(separator: '_')],
+```
+
+### Uniqueness validation
+
+Use `SlugRule` to validate uniqueness in form requests — respecting the configured slug column and scoping automatically.
 
 ```php
 use Oliwol\Slugify\Rules\SlugRule;
@@ -243,7 +298,13 @@ public function rules(): array
 }
 ```
 
-`SlugRule` uses the model's configured slug column and applies `scopeSlugQuery()` automatically. See the [API Reference](/api/reference#slugrule) for all options.
+Both rules can be combined:
+
+```php
+'slug' => ['required', new SlugFormat(), new SlugRule(Post::class)],
+```
+
+See the [API Reference](/api/reference#slugformat) for full details.
 
 ## Artisan Command
 
