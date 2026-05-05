@@ -554,6 +554,27 @@ public function rules(): array
 
 `SlugRule` uses the model's configured slug column (`to` / `getAttributeToSaveSlugTo()`) and applies `scopeSlugQuery()` automatically. Use `->ignore($model)` for update scenarios and `->scope($column, $value)` for additional constraints.
 
+## 🧪 Testing
+
+When using model factories, slugs are generated automatically via the `saving` hook on `create()`. For `make()` — which does not persist the model — no slug is generated. Use the `withSlug()` macro to control slug generation explicitly in tests:
+
+```php
+// make() without withSlug — no slug
+$post = Post::factory()->make(); // slug is null
+
+// make() with withSlug — slug is generated
+$post = Post::factory()->withSlug()->make(); // slug: "hello-world"
+
+// Custom slug
+$post = Post::factory()->withSlug('my-custom-slug')->make();
+
+// Batch creation — slugs are unique
+$posts = Post::factory()->count(3)->withSlug()->create();
+// → "hello-world", "hello-world-2", "hello-world-3"
+```
+
+The macro is registered automatically via the service provider and works with any factory for a model that uses `HasSlug`.
+
 ## ✅ Best practices & caveats
 
 - Ensure the route key column (```getRouteKeyName()```) is present in your table and is not the primary key (unless intentionally designed).
