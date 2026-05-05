@@ -18,5 +18,6 @@ final readonly class Slugify
         public ?string $separator = null,
         public ?int $maxLength = null,
         public bool $regenerateOnUpdate = true,
+        public bool $routeBinding = false,
     ) {}
 }

@@ -153,6 +153,26 @@ trait HasSlug
         return 'en';
     }
 
+    public function shouldUseSlugForRouteBinding(): bool
+    {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        return $attribute instanceof Slugify
+            && $attribute->routeBinding
+            && $attribute->to !== null;
+    }
+
+    public function getRouteKeyName(): string
+    {
+        $attribute = $this->resolveSlugifyAttribute();
+
+        if ($attribute instanceof Slugify && $attribute->routeBinding && $attribute->to !== null) {
+            return $attribute->to;
+        }
+
+        return $this->getKeyName();
+    }
+
     public function incrementSlugIfExists(string $slug): string
     {
         $slug = $this->truncateSlug($slug);

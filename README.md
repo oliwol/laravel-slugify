@@ -70,6 +70,7 @@ The `#[Slugify]` attribute accepts the following parameters:
 * `separator` (optional) — the character used to separate words in the slug. Defaults to `'-'`.
 * `maxLength` (optional) — maximum number of characters for the slug. Truncates at word boundaries. Defaults to `null` (no limit).
 * `regenerateOnUpdate` (optional) — whether to regenerate the slug when the source attribute changes on update. Defaults to `true`. Set to `false` to only generate slugs on creation (useful for SEO).
+* `routeBinding` (optional) — when `true`, automatically sets `getRouteKeyName()` to the slug column. Requires `to:` to be set explicitly. Defaults to `false`.
 
 ```php
 use Oliwol\Slugify\HasSlug;
@@ -132,7 +133,7 @@ class Post extends Model
 }
 ```
 
-> **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
+> **Route model binding**: Use `routeBinding: true` to automatically configure `getRouteKeyName()` without a manual override. Requires `to:` to be set.
 
 ### Configuration via methods
 
@@ -589,6 +590,27 @@ Both rules can be combined:
 ```
 
 `SlugRule` uses the model's configured slug column (`to` / `getAttributeToSaveSlugTo()`) and applies `scopeSlugQuery()` automatically. Use `->ignore($model)` for update scenarios and `->scope($column, $value)` for additional constraints.
+
+## 🧪 Testing
+
+When using model factories, slugs are generated automatically via the `saving` hook on `create()`. For `make()` — which does not persist the model — no slug is generated. Use the `withSlug()` macro to control slug generation explicitly in tests:
+
+```php
+// make() without withSlug — no slug
+$post = Post::factory()->make(); // slug is null
+
+// make() with withSlug — slug is generated
+$post = Post::factory()->withSlug()->make(); // slug: "hello-world"
+
+// Custom slug
+$post = Post::factory()->withSlug('my-custom-slug')->make();
+
+// Batch creation — slugs are unique
+$posts = Post::factory()->count(3)->withSlug()->create();
+// → "hello-world", "hello-world-2", "hello-world-3"
+```
+
+The macro is registered automatically via the service provider and works with any factory for a model that uses `HasSlug`.
 
 ## ✅ Best practices & caveats
 
