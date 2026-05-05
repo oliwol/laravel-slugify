@@ -4,11 +4,12 @@
 
 ```php
 #[Slugify(
-    from: 'title',           // string|array — required
-    to: 'slug',              // ?string — default: getRouteKeyName()
-    separator: '-',          // ?string — default: '-'
-    maxLength: null,         // ?int — default: null (no limit)
-    regenerateOnUpdate: true // bool — default: true
+    from: 'title',            // string|array — required
+    to: 'slug',               // ?string — default: getRouteKeyName()
+    separator: '-',           // ?string — default: '-'
+    maxLength: null,          // ?int — default: null (no limit)
+    regenerateOnUpdate: true, // bool — default: true
+    routeBinding: false,      // bool — default: false
 )]
 ```
 
@@ -81,6 +82,17 @@ Return the maximum slug length. Default: `null` (no limit).
 #### `shouldRegenerateSlugOnUpdate(): bool`
 
 Return whether the slug should regenerate on source attribute change. Default: `true`.
+
+#### `shouldUseSlugForRouteBinding(): bool`
+
+Return whether route model binding should use the slug column. Default: derived from `routeBinding` attribute parameter. Override to use dynamic logic.
+
+```php
+public function shouldUseSlugForRouteBinding(): bool
+{
+    return true;
+}
+```
 
 #### `getSlugLanguage(): string`
 

@@ -70,6 +70,7 @@ The `#[Slugify]` attribute accepts the following parameters:
 * `separator` (optional) — the character used to separate words in the slug. Defaults to `'-'`.
 * `maxLength` (optional) — maximum number of characters for the slug. Truncates at word boundaries. Defaults to `null` (no limit).
 * `regenerateOnUpdate` (optional) — whether to regenerate the slug when the source attribute changes on update. Defaults to `true`. Set to `false` to only generate slugs on creation (useful for SEO).
+* `routeBinding` (optional) — when `true`, automatically sets `getRouteKeyName()` to the slug column. Requires `to:` to be set explicitly. Defaults to `false`.
 
 ```php
 use Oliwol\Slugify\HasSlug;
@@ -132,7 +133,7 @@ class Post extends Model
 }
 ```
 
-> **Note**: The `to` parameter only controls where the slug is saved. For route model binding, you still need to override `getRouteKeyName()` separately on your model.
+> **Route model binding**: Use `routeBinding: true` to automatically configure `getRouteKeyName()` without a manual override. Requires `to:` to be set.
 
 ### Configuration via methods
 
