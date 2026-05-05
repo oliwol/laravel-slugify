@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Oliwol\Slugify;
 
-use Illuminate\Database\Eloquent\Factories\Factory;                                                                                                                                
-use Illuminate\Database\Eloquent\Model;                            
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Oliwol\Slugify\Console\SlugifyGenerateCommand;
