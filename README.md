@@ -303,7 +303,20 @@ Post::findBySlugWithHistory('nonexistent'); // → null
 
 ### Implementing 301 redirects
 
-A typical use case is redirecting old URLs to the current one in a controller:
+The easiest way is the `slug.redirect` middleware. Add it to any route that uses slug-based route model binding — it handles the redirect automatically:
+
+```php
+Route::get('/posts/{post:slug}', PostController::class)
+    ->middleware(['slug.redirect']);
+```
+
+The redirect status defaults to `301`. Publish the config to change it:
+
+```bash
+php artisan vendor:publish --tag=slugify-config
+```
+
+Alternatively, handle the redirect manually in the controller:
 
 ```php
 public function show(string $slug)
@@ -519,7 +532,24 @@ The command processes records in chunks of 200 and displays a progress bar, maki
 
 ## ✅ Validation
 
-When users can manually edit slugs, use `SlugRule` to validate uniqueness in form requests — respecting the configured slug column and scoping automatically.
+The package provides two complementary validation rules:
+
+### Format: `SlugFormat`
+
+Use `SlugFormat` to validate that a string is a proper slug — lowercase, alphanumeric, no leading/trailing/consecutive separators:
+
+```php
+use Oliwol\Slugify\Rules\SlugFormat;
+
+'slug' => ['required', new SlugFormat()],
+
+// Custom separator
+'slug' => ['required', new SlugFormat(separator: '_')],
+```
+
+### Uniqueness: `SlugRule`
+
+Use `SlugRule` to validate that a slug doesn't already exist in the database — respecting the configured slug column and scoping automatically:
 
 ```php
 use Oliwol\Slugify\Rules\SlugRule;
@@ -551,6 +581,12 @@ public function rules(): array
         ],
     ];
 }
+```
+
+Both rules can be combined:
+
+```php
+'slug' => ['required', new SlugFormat(), new SlugRule(Post::class)],
 ```
 
 `SlugRule` uses the model's configured slug column (`to` / `getAttributeToSaveSlugTo()`) and applies `scopeSlugQuery()` automatically. Use `->ignore($model)` for update scenarios and `->scope($column, $value)` for additional constraints.
