@@ -113,6 +113,15 @@ it('does not record history when slug resolves to same value', function (): void
     expect($post->slugHistory)->toHaveCount(0);
 });
 
+it('resolves route binding by primary key when field is null and route key is not the slug column', function (): void {
+    $post = PostWithSlugHistory::create(['title' => 'Hello World']);
+
+    $found = (new PostWithSlugHistory)->resolveRouteBinding($post->getKey());
+
+    expect($found)->not->toBeNull();
+    expect($found->getKey())->toBe($post->getKey());
+});
+
 it('slug history entry belongs to the sluggable model', function (): void {
     $post = PostWithSlugHistory::create(['title' => 'Hello World']);
 

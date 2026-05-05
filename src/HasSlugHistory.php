@@ -35,6 +35,22 @@ trait HasSlugHistory
             ->first();
     }
 
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        /** @var string $slugColumn */
+        $slugColumn = $this->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+
+        $resolveBySlug = $field === null
+            ? $this->getRouteKeyName() === $slugColumn
+            : $field === $slugColumn;
+
+        if ($resolveBySlug) {
+            return static::findBySlugWithHistory((string) $value);
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
     /**
      * @return MorphMany<SlugHistory, $this>
      */
