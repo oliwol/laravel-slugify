@@ -56,7 +56,7 @@ it('fails when class does not exist', function (): void {
         ->assertFailed();
 });
 
-it('fails when class does not use HasSlug', function (): void {
+it('fails when class has neither HasSlug trait nor #[Slugify] attribute', function (): void {
     $this->artisan('slugify:generate', ['model' => Illuminate\Database\Eloquent\Model::class])
         ->assertFailed();
 });

@@ -13,4 +13,11 @@ return [
      */
     'redirect_status' => 301,
 
+    /*
+     * Models that should have slugs generated automatically without using the HasSlug trait.
+     * Add the fully qualified class names of your Eloquent models here.
+     * Each model must have a #[Slugify] attribute to configure slug generation.
+     */
+    'models' => [],
+
 ];

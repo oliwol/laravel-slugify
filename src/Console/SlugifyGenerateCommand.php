@@ -8,6 +8,9 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\SlugCreator;
+use Oliwol\Slugify\Slugify;
+use ReflectionClass;
 
 final class SlugifyGenerateCommand extends Command
 {
@@ -34,20 +37,33 @@ final class SlugifyGenerateCommand extends Command
             return self::FAILURE;
         }
 
-        if (! in_array(HasSlug::class, class_uses_recursive($modelClass), true)) {
-            $this->error("Class [$modelClass] does not use the HasSlug trait.");
+        $usesHasSlug = in_array(HasSlug::class, class_uses_recursive($modelClass), true);
+        $hasSlugifyAttribute = new ReflectionClass($modelClass)->getAttributes(Slugify::class) !== [];
+
+        if (! $usesHasSlug && ! $hasSlugifyAttribute) {
+            $this->error("Class [$modelClass] does not use the HasSlug trait and has no #[Slugify] attribute.");
 
             return self::FAILURE;
         }
 
-        $force = (bool) $this->option('force');
-        $dryRun = (bool) $this->option('dry-run');
-
         /** @var Model $instance */
         $instance = new $modelClass;
 
-        /** @var string $target */
-        $target = $instance->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+        if ($usesHasSlug) {
+            /** @var string $target */
+            $target = $instance->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+        } else {
+            $creator = SlugCreator::tryForModel($instance);
+
+            if (! $creator instanceof SlugCreator) {
+                return self::FAILURE; // @codeCoverageIgnore
+            }
+
+            $target = $creator->getTarget();
+        }
+
+        $force = (bool) $this->option('force');
+        $dryRun = (bool) $this->option('dry-run');
 
         $total = $this->buildQuery($instance, $target, $force)->count();
 
@@ -65,29 +81,49 @@ final class SlugifyGenerateCommand extends Command
         $processed = 0;
 
         $this->buildQuery($instance, $target, $force)
-            ->chunkById(200, function ($models) use ($target, $dryRun, $bar, &$processed): void {
+            ->chunkById(200, function ($models) use ($target, $dryRun, $bar, &$processed, $usesHasSlug): void {
                 foreach ($models as $model) {
                     /** @var Model $model */
                     $oldSlug = $model->getAttribute($target);
 
-                    /** @var list<string> $sources */
-                    $sources = (array) $model->getAttributeToCreateSlugFrom(); // @phpstan-ignore method.notFound
+                    if ($usesHasSlug) {
+                        /** @var list<string> $sources */
+                        $sources = (array) $model->getAttributeToCreateSlugFrom(); // @phpstan-ignore method.notFound
 
-                    $value = collect($sources)
-                        ->map(fn (string $field): mixed => $model->getAttribute($field))
-                        ->filter(fn (mixed $field): bool => filled($field) && is_string($field))
-                        ->implode(' ');
+                        $value = collect($sources)
+                            ->map(fn (string $field): mixed => $model->getAttribute($field))
+                            ->filter(fn (mixed $field): bool => filled($field) && is_string($field))
+                            ->implode(' ');
 
-                    if (! filled($value)) {
-                        $bar->advance();
+                        if (! filled($value)) {
+                            $bar->advance();
 
-                        continue;
+                            continue;
+                        }
+
+                        /** @var string $newSlug */
+                        $newSlug = $model->incrementSlugIfExists( // @phpstan-ignore method.notFound
+                            slug: $model->slugify($value), // @phpstan-ignore method.notFound
+                        );
+                    } else {
+                        $chunkCreator = SlugCreator::tryForModel($model);
+
+                        if (! $chunkCreator instanceof SlugCreator) {
+                            $bar->advance(); // @codeCoverageIgnore
+
+                            continue; // @codeCoverageIgnore
+                        }
+
+                        $value = $chunkCreator->getSourceValue();
+
+                        if ($value === null) {
+                            $bar->advance();
+
+                            continue;
+                        }
+
+                        $newSlug = $chunkCreator->generate($value);
                     }
-
-                    /** @var string $newSlug */
-                    $newSlug = $model->incrementSlugIfExists( // @phpstan-ignore method.notFound
-                        slug: $model->slugify($value), // @phpstan-ignore method.notFound
-                    );
 
                     if ($oldSlug === $newSlug) {
                         $bar->advance();
