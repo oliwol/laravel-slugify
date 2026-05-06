@@ -14,6 +14,8 @@ Attach it to a model, define the source (an attribute, multiple attributes, or a
 
 ## 🚀 Installation
 
+**Requirements:** PHP 8.4+, Laravel 11+
+
 Install the package via Composer:
 
 ```bash
