@@ -1,47 +1,81 @@
-# CONTRIBUTING
+# Contributing to laravel-slugify
 
-Contributions are welcome, and are accepted via pull requests.
-Please review these guidelines before submitting any pull requests.
+## Git-Governance bei oliwol
 
-## Process
+Kein Code darf ohne explizite Freigabe durch das Board in den `1.x`-Branch
+gemerged werden. Diese Regeln gelten für alle Repositories der Organisation.
 
-1. Fork the project
-1. Create a new branch
-1. Code, test, commit and push
-1. Open a pull request detailing your changes.
+## Branch-Strategie
 
-## Guidelines
+- Der `1.x`-Branch ist **geschützt**
+- Direktes Pushen auf `1.x` ist **verboten**
+- Force-Pushes auf `1.x` sind **dauerhaft deaktiviert**
+- Merges sind **ausschließlich über Pull Requests** möglich
 
-* Please ensure the coding style running `composer lint`.
-* Send a coherent commit history, making sure each individual commit in your pull request is meaningful.
-* You may need to [rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing) to avoid merge conflicts.
-* Please remember that we follow [SemVer](http://semver.org/).
+## PR-Prozess
 
-## Setup
+### 1. Feature-Branch erstellen
 
-Clone your fork, then install the dev dependencies:
 ```bash
-composer install
-```
-## Lint
-
-Lint your code:
-```bash
-composer lint
-```
-## Tests
-
-Run all tests:
-```bash
-composer test
+git checkout 1.x
+git pull origin 1.x
+git checkout -b feature/dein-feature-name
 ```
 
-Check types:
+Naming-Konventionen:
+- `feature/` – neue Funktionen
+- `fix/` – Bug-Fixes
+- `docs/` – Dokumentation
+- `chore/` – Maintenance, Dependencies
+
+### 2. Änderungen commiten
+
 ```bash
-composer test:types
+git add .
+git commit -m "feat: kurze Beschreibung der Änderung"
 ```
 
-Unit tests:
-```bash
-composer test:unit
-```
+Commit-Konventionen (Conventional Commits):
+- `feat:` – neue Funktion
+- `fix:` – Bug-Fix
+- `docs:` – Dokumentation
+- `refactor:` – Umstrukturierung ohne Funktionsänderung
+- `chore:` – Maintenance
+
+### 3. Pull Request erstellen
+
+Öffne einen Pull Request auf GitHub mit folgenden Pflichtangaben:
+
+**PR-Beschreibung muss enthalten:**
+- Was wurde geändert?
+- Warum wurde es geändert?
+- Welche Risiken gibt es?
+
+### 4. Board-Freigabe (Pflicht)
+
+Jeder PR benötigt **mindestens 1 Approval vom Board (Oliver)** bevor er
+gemerged werden darf.
+
+- Kein Agent darf ohne dieses Approval mergen
+- Kein automatisierter Prozess darf ohne dieses Approval mergen
+- Diese Regel ist **nicht verhandelbar**
+
+### 5. Merge
+
+Nach dem Board-Approval wird der PR von Oliver oder einem autorisierten
+Teammitglied gemerged.
+
+## Wichtige Regeln
+
+| Regel | Status |
+|-------|--------|
+| Direktes Pushen auf `1.x` | VERBOTEN |
+| Force-Push auf `1.x` | VERBOTEN |
+| Merge ohne Board-Approval | VERBOTEN |
+| PR ohne Beschreibung | VERBOTEN |
+| PR mit Board-Approval | ERLAUBT |
+
+## Fragen?
+
+Bei Fragen zum Prozess wende dich an das Board (Oliver) oder öffne ein
+Issue in diesem Repository.
