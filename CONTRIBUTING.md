@@ -1,47 +1,45 @@
-# CONTRIBUTING
+# Contributing to laravel-slugify
 
-Contributions are welcome, and are accepted via pull requests.
-Please review these guidelines before submitting any pull requests.
+## Branch Strategy
 
-## Process
+- The `1.x` branch is **protected**
+- Direct pushes to `1.x` are **not allowed**
+- Force pushes to `1.x` are **disabled**
+- All changes must go through **pull requests**
 
-1. Fork the project
-1. Create a new branch
-1. Code, test, commit and push
-1. Open a pull request detailing your changes.
+## Pull Request Process
 
-## Guidelines
+### 1. Create a branch
 
-* Please ensure the coding style running `composer lint`.
-* Send a coherent commit history, making sure each individual commit in your pull request is meaningful.
-* You may need to [rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing) to avoid merge conflicts.
-* Please remember that we follow [SemVer](http://semver.org/).
-
-## Setup
-
-Clone your fork, then install the dev dependencies:
 ```bash
-composer install
-```
-## Lint
-
-Lint your code:
-```bash
-composer lint
-```
-## Tests
-
-Run all tests:
-```bash
-composer test
+git checkout 1.x
+git pull origin 1.x
+git checkout -b feature/short-description
 ```
 
-Check types:
+Branch naming:
+- `feature/` – new features
+- `fix/` – bug fixes
+- `docs/` – documentation
+- `chore/` – maintenance
+
+### 2. Commit your changes
+
 ```bash
-composer test:types
+git add .
+git commit -m "type: short description"
 ```
 
-Unit tests:
-```bash
-composer test:unit
-```
+Types: `feat`, `fix`, `docs`, `refactor`, `chore`
+
+### 3. Open a pull request
+
+PR description must include:
+- What was changed?
+- Why was it changed?
+- Are there any risks?
+
+### 4. Review and merge
+
+Every PR requires at least **1 approval from the maintainer** before merging.
+No automated process may merge without this approval.
