@@ -7,6 +7,7 @@ namespace Oliwol\Slugify;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Oliwol\Slugify\Console\SlugifyGenerateCommand;
 use Oliwol\Slugify\Http\Middleware\SlugRedirectMiddleware;
@@ -21,6 +22,34 @@ final class SlugifyServiceProvider extends ServiceProvider
 
         $this->app->make(Router::class)->aliasMiddleware('slug.redirect', SlugRedirectMiddleware::class);
 
+        Event::listen('eloquent.saving: *', function (string $event, array $payload): void {
+            /** @var Model $model */
+            $model = $payload[0];
+
+            if (in_array(HasSlug::class, class_uses_recursive($model), true)) {
+                return;
+            }
+
+            /** @var list<class-string> $models */
+            $models = (array) config('slugify.models', []);
+
+            if (! in_array($model::class, $models, true)) {
+                return;
+            }
+
+            $creator = SlugCreator::tryForModel($model);
+
+            if (! $creator instanceof SlugCreator) {
+                return;
+            }
+
+            if (! $creator->isSluggable()) {
+                return;
+            }
+
+            $creator->create();
+        });
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SlugifyGenerateCommand::class,
@@ -34,19 +63,34 @@ final class SlugifyServiceProvider extends ServiceProvider
         Factory::macro('withSlug', function (?string $slug = null) {
             /** @var Factory<Model> $this */
             return $this->afterMaking(function (Model $model) use ($slug): void {
-                if (! in_array(HasSlug::class, class_uses_recursive($model), true)) {
+                if (in_array(HasSlug::class, class_uses_recursive($model), true)) {
+                    /** @var string $slugColumn */
+                    $slugColumn = $model->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+
+                    if ($slug !== null) {
+                        $model->setAttribute($slugColumn, $slug);
+                    } else {
+                        $model->createSlug(); // @phpstan-ignore method.notFound
+                        // Sync only the slug column so the saving event still fires and
+                        // re-checks DB uniqueness sequentially during batch creates.
+                        $model->syncOriginalAttribute($slugColumn);
+                    }
+
                     return;
                 }
 
-                /** @var string $slugColumn */
-                $slugColumn = $model->getAttributeToSaveSlugTo(); // @phpstan-ignore method.notFound
+                $creator = SlugCreator::tryForModel($model);
+
+                if (! $creator instanceof SlugCreator) {
+                    return;
+                }
+
+                $slugColumn = $creator->getTarget();
 
                 if ($slug !== null) {
                     $model->setAttribute($slugColumn, $slug);
                 } else {
-                    $model->createSlug(); // @phpstan-ignore method.notFound
-                    // Sync only the slug column so the saving event still fires and
-                    // re-checks DB uniqueness sequentially during batch creates.
+                    $creator->create();
                     $model->syncOriginalAttribute($slugColumn);
                 }
             });

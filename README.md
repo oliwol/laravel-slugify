@@ -6,13 +6,15 @@
 
 **[Documentation](https://oliwol.github.io/laravel-slugify/)** | **[Migrating from Spatie](https://oliwol.github.io/laravel-slugify/guide/migrating-from-spatie)**
 
-A tiny trait that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
+A lightweight package that gives your Eloquent models clean, automatic slugs — without setup, ceremony, or extra weight.
 
-Attach it to a model, define the source (an attribute, multiple attributes, or a method), and the trait quietly handles generation, updates and uniqueness.
+Attach a PHP attribute or use the `HasSlug` trait, define the source (an attribute, multiple attributes, or a method), and the package quietly handles generation, updates and uniqueness.
 
 ---
 
 ## 🚀 Installation
+
+**Requirements:** PHP 8.4+, Laravel 11+
 
 Install the package via Composer:
 
@@ -57,6 +59,35 @@ class Post extends Model
 ```
 
 > **Priority**: Method overrides always take precedence over the `#[Slugify]` attribute.
+
+### Without any trait (attribute-only)
+
+For simpler models that don't need `findBySlug`, slug history, or translatable slugs — you can skip the trait entirely:
+
+```php
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    // No trait required
+}
+```
+
+Publish the config and register your models in the `models` array:
+
+```bash
+php artisan vendor:publish --tag=slugify-config
+```
+
+```php
+// config/slugify.php
+'models' => [
+    App\Models\Post::class,
+],
+```
+
+The service provider then automatically generates slugs for these models on every `save` event. `findBySlug`, slug history, and translatable slugs require `HasSlug` — use the trait when you need those features.
 
 ## 🛠️ Usage
 Add the ```HasSlug``` trait to any Eloquent model where a slug should be automatically generated.
@@ -208,7 +239,9 @@ $table->unique(['tenant_id', 'slug']);
 
 ## ⚙️ How it works
 
-The ```HasSlug``` trait hooks into the Eloquent saving event:
+### With `HasSlug` trait
+
+The trait hooks into the Eloquent `saving` event per model class:
 
 ```php
 protected static function bootHasSlug(): void
@@ -221,7 +254,11 @@ protected static function bootHasSlug(): void
  }
 ```
 
-When triggered, it will:
+### With attribute-only usage
+
+The service provider registers a wildcard listener that fires on every Eloquent `saving` event. It skips models that already use `HasSlug` (to avoid double processing) and models not listed in `config('slugify.models')`.
+
+### In both cases, the slug pipeline:
 
 1. Resolve the source — from the `#[Slugify]` attribute or a `getAttributeToCreateSlugFrom()` override. Supports a single attribute, multiple attributes, or a model method name.
 2. Generate a slug — if the source is a method, call it; otherwise combine filled attribute values (null/empty values are skipped).
@@ -229,7 +266,7 @@ When triggered, it will:
    1. Using attribute source(s) and none are dirty (unchanged), or
    2. The slug has been manually set and differs from the original.
    
-   > **Note**: When using a method source, dirty detection is skipped — the slug is always regenerated on save, since the trait cannot track the method's dependencies.
+   > **Note**: When using a method source, dirty detection is skipped — the slug is always regenerated on save, since the package cannot track the method's dependencies.
 4. Ensure uniqueness by incrementing existing slugs (my-post, my-post-2, my-post-3, …).
 
 ## 🔎 Finding Models by Slug
@@ -510,6 +547,8 @@ php artisan slugify:generate "App\Models\Post"
 
 This processes all records where the slug column is `null` or empty, generates a slug from the configured source attribute(s), and saves the result. Records that already have a slug are skipped.
 
+The command works for both `HasSlug` models and attribute-only models registered in `config/slugify.php`.
+
 ### Overwrite existing slugs
 
 Use `--force` to regenerate slugs for **all** records, including those that already have one:
@@ -610,7 +649,7 @@ $posts = Post::factory()->count(3)->withSlug()->create();
 // → "hello-world", "hello-world-2", "hello-world-3"
 ```
 
-The macro is registered automatically via the service provider and works with any factory for a model that uses `HasSlug`.
+The macro is registered automatically via the service provider and works with any factory for a model that uses `HasSlug` or has a `#[Slugify]` attribute.
 
 ## ✅ Best practices & caveats
 

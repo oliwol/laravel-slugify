@@ -1,5 +1,38 @@
 # Features
 
+## Attribute-Only Usage (no trait required)
+
+For simpler models that only need automatic slug generation — without `findBySlug`, slug history, or translatable slugs — you can skip the `HasSlug` trait entirely:
+
+```php
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    // No trait required
+}
+```
+
+Publish the config and register your models in the `models` array:
+
+```bash
+php artisan vendor:publish --tag=slugify-config
+```
+
+```php
+// config/slugify.php
+'models' => [
+    App\Models\Post::class,
+],
+```
+
+The service provider registers a wildcard listener that fires on every `saving` event. It skips models that already use `HasSlug` (no double processing) and models not listed in `config('slugify.models')`.
+
+::: tip When to use the trait instead
+Use `HasSlug` when you need `findBySlug()`, `findBySlugOrFail()`, slug history (`HasSlugHistory`), or translatable slugs (`HasTranslatableSlug`). Attribute-only usage is best for simple models where only automatic slug generation is needed.
+:::
+
 ## Multiple Source Fields
 
 Generate slugs from multiple attributes by passing an array:
@@ -325,7 +358,7 @@ $posts = Post::factory()->count(3)->withSlug()->create();
 // → "hello-world", "hello-world-2", "hello-world-3"
 ```
 
-The macro is registered automatically and works with any factory for a model using `HasSlug`.
+The macro is registered automatically and works with any factory for a model using `HasSlug` or with a `#[Slugify]` attribute.
 
 ## Artisan Command
 
@@ -343,3 +376,5 @@ php artisan slugify:generate "App\Models\Post" --dry-run
 ```
 
 Records are processed in chunks of 200 with a progress bar, safe for large datasets.
+
+The command works for both `HasSlug` models and attribute-only models with a `#[Slugify]` attribute — no trait required.
