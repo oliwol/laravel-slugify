@@ -3,6 +3,21 @@
 declare(strict_types=1);
 
 use Tests\Models\UserWithAttribute;
+use Tests\Models\UserWithSlugConfigClosure;
+
+it('generates slugs from a SlugConfig closure source', function (): void {
+    // Insert directly to bypass the saving event that auto-generates a slug.
+    Illuminate\Support\Facades\DB::table('users')->insert([
+        'first_name' => 'John',
+        'last_name' => 'Doe',
+        'slug' => null,
+    ]);
+
+    $this->artisan('slugify:generate', ['model' => UserWithSlugConfigClosure::class])
+        ->assertSuccessful();
+
+    expect(UserWithSlugConfigClosure::first()->slug)->toBe('john-doe');
+});
 
 it('generates slugs for records without a slug', function (): void {
     UserWithAttribute::forceCreate(['name' => 'John Doe', 'slug' => null]);

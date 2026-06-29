@@ -5,7 +5,10 @@ declare(strict_types=1);
 arch()->preset()->php();
 
 arch()->preset()->strict()
-    ->ignoring(Oliwol\Slugify\SlugHistory::class);
+    ->ignoring([
+        Oliwol\Slugify\SlugHistory::class,
+        Oliwol\Slugify\SlugConfig::class,
+    ]);
 
 arch()->preset()->security();
 

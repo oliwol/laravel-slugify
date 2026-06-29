@@ -58,7 +58,34 @@ class Post extends Model
 }
 ```
 
-> **Priority**: Method overrides always take precedence over the `#[Slugify]` attribute.
+### Using the fluent `SlugConfig` API
+
+When your configuration needs a closure or conditional logic that a PHP attribute cannot express, return a `SlugConfig` from a `slugConfig()` method:
+
+```php
+use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\SlugConfig;
+
+class Post extends Model
+{
+    use HasSlug;
+
+    public function slugConfig(): SlugConfig
+    {
+        return SlugConfig::create()
+            ->from(fn (self $post): string => $post->category->name.' '.$post->title)
+            ->to('slug')
+            ->separator('-')
+            ->maxLength(60);
+    }
+}
+```
+
+The `from()` method accepts everything the attribute does — a single attribute name, an array of attribute names, or a method name — **and** a closure receiving the model instance. Closures are the only way to combine related-model data or apply custom logic, since PHP attributes cannot hold callables. When a closure (or method) source is used, dirty detection is skipped and the slug is regenerated on every save (unless `regenerateOnUpdate(false)` is set).
+
+> **When to use which:** the `#[Slugify]` attribute covers most cases with zero boilerplate. Reach for `SlugConfig` only when you need a closure, conditional configuration, or a fluent chain.
+
+> **Priority**: `getAttributeToCreateSlugFrom()` (and other method overrides) take precedence over `slugConfig()`, which in turn takes precedence over the `#[Slugify]` attribute.
 
 ### Without any trait (attribute-only)
 
