@@ -26,6 +26,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Features', link: '/guide/features' },
+          { text: 'ID-Anchored Slugs', link: '/guide/id-anchored-slugs' },
           { text: 'Migrating from Spatie', link: '/guide/migrating-from-spatie' },
         ],
       },

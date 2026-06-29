@@ -19,5 +19,6 @@ final readonly class Slugify
         public ?int $maxLength = null,
         public bool $regenerateOnUpdate = true,
         public bool $routeBinding = false,
+        public bool $appendId = false,
     ) {}
 }
