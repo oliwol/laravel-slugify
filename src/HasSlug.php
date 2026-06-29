@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Oliwol\Slugify;
 
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -36,18 +37,18 @@ trait HasSlug
     }
 
     /**
-     * @return string|array<int, string>
+     * @return string|array<int, string>|Closure
      */
-    public function getAttributeToCreateSlugFrom(): string|array
+    public function getAttributeToCreateSlugFrom(): string|array|Closure
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify) {
-            return $attribute->from;
+        if ($config instanceof SlugConfig) {
+            return $config->getFrom();
         }
 
         throw new LogicException(sprintf(
-            'Class %s must either override getAttributeToCreateSlugFrom() or use the #[Slugify] attribute.',
+            'Class %s must either override getAttributeToCreateSlugFrom(), define a slugConfig() method or use the #[Slugify] attribute.',
             static::class,
         ));
     }
@@ -56,10 +57,11 @@ trait HasSlug
     {
         $source = $this->getAttributeToCreateSlugFrom();
         $target = $this->getAttributeToSaveSlugTo();
+        $usesClosure = $source instanceof Closure;
         $usesMethod = is_string($source) && method_exists($this, $source);
 
-        // When using a method source, skip dirty detection (dependencies are unknown).
-        if (! $usesMethod) {
+        // When using a closure or method source, skip dirty detection (dependencies are unknown).
+        if (! $usesClosure && ! $usesMethod) {
             $sources = (array) $source;
 
             // There are no changes to any source attribute; no need to recreate the slug.
@@ -78,11 +80,12 @@ trait HasSlug
             return;
         }
 
-        if ($usesMethod) {
+        if ($source instanceof Closure) {
+            $value = (string) $source($this);
+        } elseif (is_string($source) && method_exists($this, $source)) {
             $value = $this->{$source}();
         } else {
-            $sources = (array) $source;
-            $value = collect($sources)
+            $value = collect((array) $source)
                 ->map(fn (string $field): ?string => $this->getAttribute($field))
                 ->filter(fn (?string $field): bool => filled($field))
                 ->implode(' ');
@@ -106,10 +109,10 @@ trait HasSlug
 
     public function getAttributeToSaveSlugTo(): string
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify && $attribute->to !== null) {
-            return $attribute->to;
+        if ($config instanceof SlugConfig && $config->getTo() !== null) {
+            return $config->getTo();
         }
 
         return $this->getRouteKeyName();
@@ -117,10 +120,10 @@ trait HasSlug
 
     public function getSlugSeparator(): string
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify && $attribute->separator !== null) {
-            return $attribute->separator;
+        if ($config instanceof SlugConfig && $config->getSeparator() !== null) {
+            return $config->getSeparator();
         }
 
         return '-';
@@ -128,10 +131,10 @@ trait HasSlug
 
     public function getMaxSlugLength(): ?int
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify && $attribute->maxLength !== null) {
-            return $attribute->maxLength;
+        if ($config instanceof SlugConfig && $config->getMaxLength() !== null) {
+            return $config->getMaxLength();
         }
 
         return null;
@@ -139,10 +142,10 @@ trait HasSlug
 
     public function shouldRegenerateSlugOnUpdate(): bool
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify) {
-            return $attribute->regenerateOnUpdate;
+        if ($config instanceof SlugConfig) {
+            return $config->shouldRegenerateOnUpdate();
         }
 
         return true;
@@ -155,19 +158,19 @@ trait HasSlug
 
     public function shouldUseSlugForRouteBinding(): bool
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        return $attribute instanceof Slugify
-            && $attribute->routeBinding
-            && $attribute->to !== null;
+        return $config instanceof SlugConfig
+            && $config->usesRouteBinding()
+            && $config->getTo() !== null;
     }
 
     public function getRouteKeyName(): string
     {
-        $attribute = $this->resolveSlugifyAttribute();
+        $config = $this->resolveSlugConfig();
 
-        if ($attribute instanceof Slugify && $attribute->routeBinding && $attribute->to !== null) {
-            return $attribute->to;
+        if ($config instanceof SlugConfig && $config->usesRouteBinding() && $config->getTo() !== null) {
+            return $config->getTo();
         }
 
         return $this->getKeyName();
@@ -197,6 +200,11 @@ trait HasSlug
         // Ensure that the route key name is different from the primary key name.
         if ($this->getAttributeToSaveSlugTo() === $this->getKeyName()) {
             return false;
+        }
+
+        // When source resolves to a closure, delegate to the closure result.
+        if ($source instanceof Closure) {
+            return filled($source($this));
         }
 
         // When source resolves to a method, delegate to the method result.
@@ -285,6 +293,20 @@ trait HasSlug
             ->where($this->getAttributeToSaveSlugTo(), $slug)
             ->whereNot($this->getKeyName(), $this->getKey())
             ->exists();
+    }
+
+    private function resolveSlugConfig(): ?SlugConfig
+    {
+        if (method_exists($this, 'slugConfig')) {
+            /** @var SlugConfig */
+            return $this->slugConfig();
+        }
+
+        $attribute = $this->resolveSlugifyAttribute();
+
+        return $attribute instanceof Slugify
+            ? SlugConfig::fromAttribute($attribute)
+            : null;
     }
 
     private function resolveSlugifyAttribute(): ?Slugify

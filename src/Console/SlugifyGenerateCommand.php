@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Oliwol\Slugify\Console;
 
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -87,13 +88,20 @@ final class SlugifyGenerateCommand extends Command
                     $oldSlug = $model->getAttribute($target);
 
                     if ($usesHasSlug) {
-                        /** @var list<string> $sources */
-                        $sources = (array) $model->getAttributeToCreateSlugFrom(); // @phpstan-ignore method.notFound
+                        $source = $model->getAttributeToCreateSlugFrom(); // @phpstan-ignore method.notFound
 
-                        $value = collect($sources)
-                            ->map(fn (string $field): mixed => $model->getAttribute($field))
-                            ->filter(fn (mixed $field): bool => filled($field) && is_string($field))
-                            ->implode(' ');
+                        if ($source instanceof Closure) {
+                            $closureValue = $source($model);
+                            $value = is_string($closureValue) ? $closureValue : '';
+                        } else {
+                            /** @var list<string> $sources */
+                            $sources = (array) $source;
+
+                            $value = collect($sources)
+                                ->map(fn (string $field): mixed => $model->getAttribute($field))
+                                ->filter(fn (mixed $field): bool => filled($field) && is_string($field))
+                                ->implode(' ');
+                        }
 
                         if (! filled($value)) {
                             $bar->advance();
