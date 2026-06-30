@@ -16,14 +16,16 @@ it('builds a configuration fluently', function (): void {
         ->separator('_')
         ->maxLength(30)
         ->regenerateOnUpdate(false)
-        ->routeBinding();
+        ->routeBinding()
+        ->appendId();
 
     expect($config->getFrom())->toBe('title')
         ->and($config->getTo())->toBe('slug')
         ->and($config->getSeparator())->toBe('_')
         ->and($config->getMaxLength())->toBe(30)
         ->and($config->shouldRegenerateOnUpdate())->toBeFalse()
-        ->and($config->usesRouteBinding())->toBeTrue();
+        ->and($config->usesRouteBinding())->toBeTrue()
+        ->and($config->usesIdAnchoring())->toBeTrue();
 });
 
 it('exposes sensible defaults', function (): void {
@@ -34,7 +36,8 @@ it('exposes sensible defaults', function (): void {
         ->and($config->getSeparator())->toBeNull()
         ->and($config->getMaxLength())->toBeNull()
         ->and($config->shouldRegenerateOnUpdate())->toBeTrue()
-        ->and($config->usesRouteBinding())->toBeFalse();
+        ->and($config->usesRouteBinding())->toBeFalse()
+        ->and($config->usesIdAnchoring())->toBeFalse();
 });
 
 it('creates a configuration from a Slugify attribute', function (): void {
@@ -45,6 +48,7 @@ it('creates a configuration from a Slugify attribute', function (): void {
         maxLength: 10,
         regenerateOnUpdate: false,
         routeBinding: true,
+        appendId: true,
     ));
 
     expect($config->getFrom())->toBe('name')
@@ -52,7 +56,8 @@ it('creates a configuration from a Slugify attribute', function (): void {
         ->and($config->getSeparator())->toBe('+')
         ->and($config->getMaxLength())->toBe(10)
         ->and($config->shouldRegenerateOnUpdate())->toBeFalse()
-        ->and($config->usesRouteBinding())->toBeTrue();
+        ->and($config->usesRouteBinding())->toBeTrue()
+        ->and($config->usesIdAnchoring())->toBeTrue();
 });
 
 it('creates a slug via SlugConfig with custom separator', function (): void {

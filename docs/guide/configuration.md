@@ -151,6 +151,7 @@ class Post extends Model
 | `maxLength()` | `int` | Max length, truncated at word boundaries |
 | `regenerateOnUpdate()` | `bool` | Whether to regenerate on update (default `true`) |
 | `routeBinding()` | `bool` | Use the slug column for route binding (requires `to()`) |
+| `appendId()` | `bool` | Anchor the route key to the primary key (`{slug}-{id}`) — see [ID-Anchored Slugs](/guide/id-anchored-slugs) |
 
 The `from()` closure receives the model instance and is the only way to combine related-model data or apply custom logic, since attributes cannot hold callables. As with method sources, a closure source skips dirty detection — the slug is regenerated on every save unless `regenerateOnUpdate(false)` is set.
 

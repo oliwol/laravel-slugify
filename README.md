@@ -129,6 +129,7 @@ The `#[Slugify]` attribute accepts the following parameters:
 * `maxLength` (optional) — maximum number of characters for the slug. Truncates at word boundaries. Defaults to `null` (no limit).
 * `regenerateOnUpdate` (optional) — whether to regenerate the slug when the source attribute changes on update. Defaults to `true`. Set to `false` to only generate slugs on creation (useful for SEO).
 * `routeBinding` (optional) — when `true`, automatically sets `getRouteKeyName()` to the slug column. Requires `to:` to be set explicitly. Defaults to `false`.
+* `appendId` (optional) — when `true`, the route key becomes `{slug}-{id}` (e.g. `hello-world-5`) and the model resolves by the ID suffix, so slugs can change without breaking links. Stale slugs issue a `308` canonical redirect via the `slug.redirect` middleware. Requires the `HasSlug` trait. Defaults to `false`. See [ID-Anchored Slugs](https://oliwol.github.io/laravel-slugify/guide/id-anchored-slugs).
 
 ```php
 use Oliwol\Slugify\HasSlug;

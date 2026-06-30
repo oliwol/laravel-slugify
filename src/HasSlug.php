@@ -176,8 +176,41 @@ trait HasSlug
         return $this->getKeyName();
     }
 
+    public function isIdAnchored(): bool
+    {
+        $config = $this->resolveSlugConfig();
+
+        return $config instanceof SlugConfig && $config->usesIdAnchoring();
+    }
+
+    public function getRouteKey()
+    {
+        if (! $this->isIdAnchored()) {
+            return $this->getAttribute($this->getRouteKeyName());
+        }
+
+        $slug = $this->getAttribute($this->getAttributeToSaveSlugTo());
+
+        return (is_string($slug) ? $slug : '').'-'.$this->getKey();
+    }
+
+    public function resolveRouteBindingQuery($query, $value, $field = null)
+    {
+        if ($this->isIdAnchored() && $field === null) {
+            return $query->where($this->getKeyName(), $this->extractIdFromRouteKey($value));
+        }
+
+        return $query->where($field ?? $this->getRouteKeyName(), $value);
+    }
+
     public function incrementSlugIfExists(string $slug): string
     {
+        // With ID-anchored slugs the primary key already makes every URL unique,
+        // so the slug itself stays clean — no numeric increment is appended.
+        if ($this->isIdAnchored()) {
+            return $this->truncateSlug($slug);
+        }
+
         $slug = $this->truncateSlug($slug);
         $original = $slug;
         $separator = $this->getSlugSeparator();
@@ -293,6 +326,20 @@ trait HasSlug
             ->where($this->getAttributeToSaveSlugTo(), $slug)
             ->whereNot($this->getKeyName(), $this->getKey())
             ->exists();
+    }
+
+    private function extractIdFromRouteKey(mixed $routeKey): ?string
+    {
+        if (! is_string($routeKey)) {
+            return null;
+        }
+
+        // The trailing number is always the primary key (appendId builds "{slug}-{id}").
+        if (preg_match('/(\d+)$/', $routeKey, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     private function resolveSlugConfig(): ?SlugConfig

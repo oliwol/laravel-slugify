@@ -23,6 +23,8 @@ final class SlugConfig
 
     private bool $routeBinding = false;
 
+    private bool $appendId = false;
+
     public static function create(): self
     {
         return new self;
@@ -37,6 +39,7 @@ final class SlugConfig
         $config->maxLength = $attribute->maxLength;
         $config->regenerateOnUpdate = $attribute->regenerateOnUpdate;
         $config->routeBinding = $attribute->routeBinding;
+        $config->appendId = $attribute->appendId;
 
         return $config;
     }
@@ -86,6 +89,13 @@ final class SlugConfig
         return $this;
     }
 
+    public function appendId(bool $appendId = true): self
+    {
+        $this->appendId = $appendId;
+
+        return $this;
+    }
+
     /**
      * @return string|array<int, string>|Closure
      */
@@ -117,5 +127,10 @@ final class SlugConfig
     public function usesRouteBinding(): bool
     {
         return $this->routeBinding;
+    }
+
+    public function usesIdAnchoring(): bool
+    {
+        return $this->appendId;
     }
 }
