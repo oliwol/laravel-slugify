@@ -27,6 +27,7 @@ export default defineConfig({
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Features', link: '/guide/features' },
           { text: 'ID-Anchored Slugs', link: '/guide/id-anchored-slugs' },
+          { text: 'Upgrading (v1 → v2)', link: '/guide/upgrading' },
           { text: 'Migrating from Spatie', link: '/guide/migrating-from-spatie' },
         ],
       },
