@@ -696,6 +696,20 @@ public function scopeSlugQuery($query)
 ```
 This will append a `WHERE tenant_id = ?` clause when checking for existing slugs.
 
+## 🤖 Laravel Boost
+
+This package ships a [Laravel Boost](https://laravel.com/docs/boost) skill, so AI agents know how to scaffold sluggable models using this package's conventions (`#[Slugify]`, `SlugConfig`, `appendId`, …).
+
+If your project uses Boost, the skill is discovered automatically — no extra setup in this package is required. Run:
+
+```bash
+php artisan boost:install        # select "Skills" when prompted
+# or, if Boost is already installed:
+php artisan boost:update --discover
+```
+
+Boost then scans your installed packages, finds the `slugify-development` skill and offers to install it. Projects that don't use Boost can ignore this — the skill file simply sits unused in the package.
+
 ## 📄 License
 
 This package is open-sourced software licensed under the [MIT license](LICENSE).

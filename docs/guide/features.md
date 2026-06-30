@@ -378,3 +378,9 @@ php artisan slugify:generate "App\Models\Post" --dry-run
 Records are processed in chunks of 200 with a progress bar, safe for large datasets.
 
 The command works for both `HasSlug` models and attribute-only models with a `#[Slugify]` attribute — no trait required.
+
+## Laravel Boost Skill
+
+This package bundles a [Laravel Boost](https://laravel.com/docs/boost) skill (`slugify-development`) so AI agents know how to scaffold sluggable models using this package's conventions — `#[Slugify]`, the `SlugConfig` fluent API, `appendId`, slug history and more.
+
+If your project uses Boost, the skill is discovered automatically; no extra setup is required in this package. Run `php artisan boost:install` (and select *Skills*), or `php artisan boost:update --discover` if Boost is already installed. Boost scans your installed packages, finds the skill and offers to install it. Projects that don't use Boost can ignore this entirely.
