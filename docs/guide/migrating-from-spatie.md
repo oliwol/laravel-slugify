@@ -2,13 +2,87 @@
 
 This guide helps you migrate from [`spatie/laravel-sluggable`](https://github.com/spatie/laravel-sluggable) to `oliwol/laravel-slugify`.
 
-## Side-by-Side Comparison
+Both packages are mature and share a lot of ground — especially since Spatie v4, which added attribute-based configuration and self-healing URLs. This guide is written to be **factual, not competitive**: it shows where the packages are equivalent, where each is stronger, and exactly how to translate one API to the other.
 
-### Basic Configuration
+## Honest positioning vs Spatie v4
+
+The two packages overlap heavily. The differences worth knowing:
+
+- **Laravel Slugify is stronger at**: slug history with timestamps and an audit trail, lifecycle events (`SlugGenerated` / `SlugUpdated`), a built-in Artisan bulk-generation command, and a richer attribute (separator, max length, regeneration control and route binding all live on `#[Slugify]` itself).
+- **Spatie v4 is stronger at**: overridable actions — you can swap the slug generator or the self-healing URL resolver for your own class via config. Laravel Slugify has no equivalent today; use events or method overrides instead.
+
+If those specific features don't matter to you, both packages will serve you equally well.
+
+## Feature comparison
+
+| Feature | Laravel Slugify v2 | Spatie v4 |
+|---|---|---|
+| Attribute-only (no trait) | ✅ `#[Slugify]` | ✅ `#[Sluggable]` |
+| Options on the attribute itself | ✅ separator, maxLength, regenerate, routeBinding, appendId | ⚠️ `from` / `to` / `selfHealing` only |
+| Fluent config API | ✅ `SlugConfig` | ✅ `SlugOptions` |
+| Closures as source | ✅ (`SlugConfig`) | ✅ (`SlugOptions`) |
+| Multiple source fields | ✅ | ✅ |
+| Custom separator | ✅ | ✅ |
+| Max length (word-boundary aware) | ✅ | ✅ |
+| Prevent regeneration on update | ✅ | ✅ |
+| Scoped uniqueness | ✅ `scopeSlugQuery()` | ✅ (`SlugOptions`) |
+| Slug history with timestamps | ✅ `HasSlugHistory` | ❌ |
+| Events (`SlugGenerated`, `SlugUpdated`) | ✅ | ❌ |
+| Artisan bulk generation command | ✅ `slugify:generate` | ❌ |
+| Translatable slugs | ✅ | ✅ |
+| ID-anchored URLs | ✅ `appendId` | ✅ ("Self-Healing URLs") |
+| Laravel Boost skill | ✅ | ✅ |
+| Overridable actions | ❌ | ✅ |
+
+## API mapping
+
+The fastest way to migrate is to translate names one-to-one:
+
+| Spatie v4 | Laravel Slugify v2 |
+|---|---|
+| `#[Sluggable]` | `#[Slugify]` |
+| `from:` / `to:` | `from:` / `to:` |
+| `selfHealing: true` | `appendId: true` |
+| `SlugOptions` / `getSlugOptions()` | `SlugConfig` / `slugConfig()` |
+| `->generateSlugsFrom('title')` | `->from('title')` |
+| `->saveSlugsTo('slug')` | `->to('slug')` |
+| `->usingSeparator('_')` | `->separator('_')` |
+| `->slugsShouldBeNoLongerThan(50)` | `->maxLength(50)` |
+| `->doNotGenerateSlugsOnUpdate()` | `->regenerateOnUpdate(false)` |
+| `Spatie\Sluggable\HasSlug` | `Oliwol\Slugify\HasSlug` |
+| `Spatie\Sluggable\HasTranslatableSlug` | `Oliwol\Slugify\HasTranslatableSlug` |
+
+## Side-by-side
+
+### Basic configuration (attribute)
+
+Both packages support attribute-only configuration since Spatie v4.
 
 ::: code-group
 
-```php [spatie/laravel-sluggable]
+```php [spatie/laravel-sluggable v4]
+use Spatie\Sluggable\Sluggable;
+
+#[Sluggable(from: 'title', to: 'slug')]
+class Post extends Model {}
+```
+
+```php [oliwol/laravel-slugify]
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model {}
+```
+
+:::
+
+### Separator, max length and regeneration
+
+These options live directly on the `#[Slugify]` attribute. In Spatie v4 they require the `HasSlug` trait and a `getSlugOptions()` method.
+
+::: code-group
+
+```php [spatie/laravel-sluggable v4]
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -20,29 +94,28 @@ class Post extends Model
     {
         return SlugOptions::create()
             ->generateSlugsFrom('title')
-            ->saveSlugsTo('slug');
+            ->saveSlugsTo('slug')
+            ->usingSeparator('_')
+            ->slugsShouldBeNoLongerThan(50)
+            ->doNotGenerateSlugsOnUpdate();
     }
 }
 ```
 
 ```php [oliwol/laravel-slugify]
-use Oliwol\Slugify\HasSlug;
 use Oliwol\Slugify\Slugify;
 
-#[Slugify(from: 'title', to: 'slug')]
-class Post extends Model
-{
-    use HasSlug;
-}
+#[Slugify(from: 'title', to: 'slug', separator: '_', maxLength: 50, regenerateOnUpdate: false)]
+class Post extends Model {}
 ```
 
 :::
 
-### Multiple Source Fields
+### Multiple source fields
 
 ::: code-group
 
-```php [spatie/laravel-sluggable]
+```php [spatie/laravel-sluggable v4]
 SlugOptions::create()
     ->generateSlugsFrom(['first_name', 'last_name'])
     ->saveSlugsTo('slug');
@@ -54,85 +127,77 @@ SlugOptions::create()
 
 :::
 
-### Custom Separator
+### Closures / custom slug generation
+
+Both packages support closures. Spatie uses `getSlugOptions()`; Laravel Slugify uses `slugConfig()` returning a `SlugConfig`.
 
 ::: code-group
 
-```php [spatie/laravel-sluggable]
-SlugOptions::create()
-    ->generateSlugsFrom('title')
-    ->saveSlugsTo('slug')
-    ->usingSeparator('_');
-```
+```php [spatie/laravel-sluggable v4]
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
-```php [oliwol/laravel-slugify]
-#[Slugify(from: 'title', to: 'slug', separator: '_')]
-```
-
-:::
-
-### Max Length
-
-::: code-group
-
-```php [spatie/laravel-sluggable]
-SlugOptions::create()
-    ->generateSlugsFrom('title')
-    ->saveSlugsTo('slug')
-    ->slugsShouldBeNoLongerThan(50);
-```
-
-```php [oliwol/laravel-slugify]
-#[Slugify(from: 'title', to: 'slug', maxLength: 50)]
-```
-
-:::
-
-### Prevent Regeneration on Update
-
-::: code-group
-
-```php [spatie/laravel-sluggable]
-SlugOptions::create()
-    ->generateSlugsFrom('title')
-    ->saveSlugsTo('slug')
-    ->doNotGenerateSlugsOnUpdate();
-```
-
-```php [oliwol/laravel-slugify]
-#[Slugify(from: 'title', to: 'slug', regenerateOnUpdate: false)]
-```
-
-:::
-
-### Custom Slug Generation
-
-::: code-group
-
-```php [spatie/laravel-sluggable]
-SlugOptions::create()
-    ->generateSlugsFrom(function ($model) {
-        return $model->category->name . ' ' . $model->title;
-    })
-    ->saveSlugsTo('slug');
-```
-
-```php [oliwol/laravel-slugify]
-#[Slugify(from: 'getFullTitle', to: 'slug')]
 class Post extends Model
 {
     use HasSlug;
 
-    public function getFullTitle(): string
+    public function getSlugOptions(): SlugOptions
     {
-        return $this->category->name . ' ' . $this->title;
+        return SlugOptions::create()
+            ->generateSlugsFrom(fn (self $post) => $post->category->name.' '.$post->title)
+            ->saveSlugsTo('slug');
+    }
+}
+```
+
+```php [oliwol/laravel-slugify]
+use Oliwol\Slugify\HasSlug;
+use Oliwol\Slugify\SlugConfig;
+
+class Post extends Model
+{
+    use HasSlug;
+
+    public function slugConfig(): SlugConfig
+    {
+        return SlugConfig::create()
+            ->from(fn (self $post) => $post->category->name.' '.$post->title)
+            ->to('slug');
     }
 }
 ```
 
 :::
 
-## Migration Checklist
+### Self-healing / ID-anchored URLs
+
+Same feature, different name. Both produce `hello-world-5` URLs that resolve by the ID and issue a `308` redirect when the slug part is stale.
+
+::: code-group
+
+```php [spatie/laravel-sluggable v4]
+#[Sluggable(from: 'title', to: 'slug', selfHealing: true)]
+class Post extends Model
+{
+    use HasSlug;
+}
+```
+
+```php [oliwol/laravel-slugify]
+#[Slugify(from: 'title', to: 'slug', appendId: true)]
+class Post extends Model
+{
+    use HasSlug;
+}
+```
+
+:::
+
+See [ID-Anchored Slugs](/guide/id-anchored-slugs) for details.
+
+## Migration steps
+
+### From Spatie v4 (attribute-based)
 
 1. **Replace the dependency**
    ```bash
@@ -140,44 +205,43 @@ class Post extends Model
    composer require oliwol/laravel-slugify
    ```
 
-2. **Update imports** in all model files:
-   - `Spatie\Sluggable\HasSlug` → `Oliwol\Slugify\HasSlug`
-   - Remove `use Spatie\Sluggable\SlugOptions;`
-   - Add `use Oliwol\Slugify\Slugify;`
+2. **Rename the attribute** on each model: `#[Sluggable(...)]` → `#[Slugify(...)]`, and `selfHealing:` → `appendId:`.
 
-3. **Replace `getSlugOptions()`** with `#[Slugify]` attribute on the class
+3. **Update imports**: `Spatie\Sluggable\HasSlug` → `Oliwol\Slugify\HasSlug` (and `HasTranslatableSlug` likewise).
 
-4. **Update translatable slugs** (if applicable):
-   - `Spatie\Sluggable\HasTranslatableSlug` → `Oliwol\Slugify\HasTranslatableSlug`
+4. **Translate `getSlugOptions()`** (if used) to a `slugConfig()` method returning `SlugConfig`, or move simple options onto the `#[Slugify]` attribute. Use the [API mapping](#api-mapping) above.
 
-5. **Test your application** — existing slugs in the database are not affected
+5. **Test your application** — existing slugs in the database are not affected.
 
-## Common Gotchas
+### From Spatie v3 (`getSlugOptions`-based)
 
-### Closure sources become methods
+1. **Replace the dependency** (as above).
 
-Spatie allows inline closures for slug generation. Laravel Slugify uses named methods instead — reference the method name as a string in `from`:
+2. **Update imports**: `Spatie\Sluggable\HasSlug` → `Oliwol\Slugify\HasSlug`; remove `use Spatie\Sluggable\SlugOptions;` and add `use Oliwol\Slugify\Slugify;`.
 
-```php
-// Spatie: closure
-->generateSlugsFrom(fn ($model) => $model->title . '-' . $model->id)
+3. **Replace `getSlugOptions()`** with a `#[Slugify]` attribute for simple configurations, or a `slugConfig()` method returning `SlugConfig` if you need closures or conditional logic.
 
-// Slugify: named method
-#[Slugify(from: 'getSlugSource', to: 'slug')]
+4. **Update translatable slugs** (if applicable): `Spatie\Sluggable\HasTranslatableSlug` → `Oliwol\Slugify\HasTranslatableSlug`.
 
-public function getSlugSource(): string
-{
-    return $this->title . '-' . $this->id;
-}
-```
+5. **Test your application** — existing slugs are preserved.
 
-### `getSlugOptions()` must be removed
+## Common gotchas
 
-If you keep the old `getSlugOptions()` method alongside `#[Slugify]`, the method won't be called — it's a Spatie-specific convention. Remove it to avoid confusion.
+### Spatie's attribute is minimal
+
+In Spatie v4 the `#[Sluggable]` attribute only accepts `from`, `to` and `selfHealing`; everything else (separator, max length, regeneration, scoping) lives in `getSlugOptions()`. With Laravel Slugify those options are available directly on `#[Slugify]`, so many models that needed a `getSlugOptions()` method in Spatie can become a single attribute here.
+
+### `getSlugOptions()` is not called
+
+Laravel Slugify does not recognise Spatie's `getSlugOptions()` convention. Remove it and use `#[Slugify]` or `slugConfig()` instead, otherwise the method silently does nothing.
+
+### No overridable actions
+
+Spatie v4 lets you swap its slug generator or self-healing resolver via config. Laravel Slugify has no equivalent. If you relied on this, replace it with a method source / closure (`slugConfig()->from(...)`) for custom generation, or listen to `SlugGenerated` / `SlugUpdated` for side effects.
 
 ### Scoping works differently
 
-Spatie has no built-in scoping for uniqueness. If you used custom query logic, use `scopeSlugQuery()`:
+Spatie configures scoped uniqueness in `getSlugOptions()`. Laravel Slugify uses a `scopeSlugQuery()` method:
 
 ```php
 public function scopeSlugQuery($query)
@@ -188,27 +252,8 @@ public function scopeSlugQuery($query)
 
 ### Existing database slugs are preserved
 
-Switching packages does **not** affect existing slugs in your database. The new trait only generates slugs on save. To regenerate all slugs with the new configuration, use the Artisan command:
+Switching packages does **not** touch existing slugs. New slugs are only generated on save. To regenerate everything with the new configuration:
 
 ```bash
 php artisan slugify:generate "App\Models\Post" --force
 ```
-
-## Feature Comparison
-
-| Feature | spatie/laravel-sluggable | oliwol/laravel-slugify |
-|---|---|---|
-| Attribute-based config | No | Yes (`#[Slugify]`) |
-| Method-based config | `getSlugOptions()` | Method overrides |
-| Multiple source fields | Yes | Yes |
-| Custom separator | Yes | Yes |
-| Max length | Yes | Yes (word-boundary aware) |
-| Prevent update regeneration | Yes | Yes |
-| Slug uniqueness | Yes | Yes |
-| Custom scoping | No | Yes (`scopeSlugQuery`) |
-| Slug history | No | Yes (`HasSlugHistory`) |
-| Events | No | Yes (`SlugGenerated`, `SlugUpdated`) |
-| `findBySlug()` | Yes | Yes |
-| Translatable slugs | Yes | Yes |
-| Artisan command | No | Yes (`slugify:generate`) |
-| Closure source | Yes | Via method source |
