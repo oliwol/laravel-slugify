@@ -10,7 +10,30 @@ composer require oliwol/laravel-slugify
 
 ## Quick Start
 
-### Using the PHP Attribute (recommended)
+### Attribute-only (the simplest setup)
+
+Add the `#[Slugify]` attribute and register the model in `config/slugify.php` — no trait required. The package generates slugs automatically on save.
+
+```php
+use Oliwol\Slugify\Slugify;
+
+#[Slugify(from: 'title', to: 'slug')]
+class Post extends Model
+{
+    // No trait required
+}
+```
+
+```php
+// config/slugify.php (publish with: php artisan vendor:publish --tag=slugify-config)
+'models' => [
+    App\Models\Post::class,
+],
+```
+
+### With the `HasSlug` trait
+
+Add the trait when you need `findBySlug()`, [slug history](/guide/features#slug-history), [translatable slugs](/guide/features#translatable-slugs), [route binding](/guide/features#route-model-binding) or [ID-anchored slugs](/guide/id-anchored-slugs). No config registration is needed when using the trait.
 
 ```php
 use Oliwol\Slugify\HasSlug;
@@ -23,29 +46,12 @@ class Post extends Model
 }
 ```
 
-### Using method overrides
+### Closures and complex configuration
 
-```php
-use Oliwol\Slugify\HasSlug;
-
-class Post extends Model
-{
-    use HasSlug;
-
-    public function getAttributeToCreateSlugFrom(): string|array
-    {
-        return 'title';
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
-}
-```
+When a PHP attribute isn't expressive enough — closures, conditional logic — return a [`SlugConfig`](/guide/configuration#via-the-fluent-slugconfig-api) from a `slugConfig()` method, or override the configuration methods directly.
 
 ::: tip Priority
-Method overrides always take precedence over the `#[Slugify]` attribute.
+Method overrides > `slugConfig()` > `#[Slugify]` attribute.
 :::
 
 ## Migration Setup

@@ -10,10 +10,42 @@
     maxLength: null,          // ?int — default: null (no limit)
     regenerateOnUpdate: true, // bool — default: true
     routeBinding: false,      // bool — default: false
+    appendId: false,          // bool — default: false
 )]
 ```
 
 When `routeBinding: true` is set (and `to` is specified), `getRouteKeyName()` returns the slug column so Laravel resolves route parameters by slug automatically.
+
+When `appendId: true` is set, the route key becomes `{slug}-{id}` and the model resolves by the trailing ID, with a `308` canonical redirect for stale slugs. Requires the `HasSlug` trait. See [ID-Anchored Slugs](/guide/id-anchored-slugs).
+
+## `SlugConfig`
+
+A fluent, mutable builder returned from a `slugConfig()` method on the model as an alternative to the `#[Slugify]` attribute. Use it when you need a closure source or conditional logic the attribute can't express. See [Configuration](/guide/configuration#via-the-fluent-slugconfig-api).
+
+```php
+use Oliwol\Slugify\SlugConfig;
+
+SlugConfig::create()
+    ->from('title')          // string|array|Closure — closure receives the model
+    ->to('slug')             // string
+    ->separator('-')         // string
+    ->maxLength(60)          // int
+    ->regenerateOnUpdate()   // bool — default true
+    ->routeBinding()         // bool — default true when called
+    ->appendId();            // bool — default true when called
+```
+
+| Builder method | Getter |
+|---|---|
+| `from(string\|array\|Closure)` | `getFrom(): string\|array\|Closure` |
+| `to(string)` | `getTo(): ?string` |
+| `separator(string)` | `getSeparator(): ?string` |
+| `maxLength(int)` | `getMaxLength(): ?int` |
+| `regenerateOnUpdate(bool = true)` | `shouldRegenerateOnUpdate(): bool` |
+| `routeBinding(bool = true)` | `usesRouteBinding(): bool` |
+| `appendId(bool = true)` | `usesIdAnchoring(): bool` |
+
+`SlugConfig::fromAttribute(Slugify $attribute): self` builds a config from an attribute — used internally to normalize both configuration sources.
 
 ## HasSlug Trait
 
@@ -71,11 +103,27 @@ Return the route key name. When `routeBinding: true` is configured and `to` is s
 
 Return whether the model is configured to use the slug column for route model binding.
 
+#### `isIdAnchored(): bool`
+
+Return whether ID-anchored slugs (`appendId`) are enabled for this model.
+
+#### `getRouteKey()`
+
+When `appendId` is enabled, returns `{slug}-{id}`. Otherwise returns the standard Eloquent route key (`getAttribute(getRouteKeyName())`).
+
+#### `resolveRouteBindingQuery($query, $value, $field = null)`
+
+When `appendId` is enabled and no explicit field is given, resolves the model by the trailing ID extracted from the route value. Otherwise behaves like the default Eloquent binding query.
+
 ### Overridable Methods
 
-#### `getAttributeToCreateSlugFrom(): string|array`
+#### `slugConfig(): SlugConfig`
 
-Return the source attribute name(s) or method name. Override to customize.
+Optional. Return a [`SlugConfig`](#slugconfig) to configure slug generation fluently — takes precedence over the `#[Slugify]` attribute. Define this method when you need closures or conditional logic.
+
+#### `getAttributeToCreateSlugFrom(): string|array|Closure`
+
+Return the source attribute name(s), method name, or a closure. Overriding this takes precedence over both `slugConfig()` and the `#[Slugify]` attribute.
 
 #### `getAttributeToSaveSlugTo(): string`
 

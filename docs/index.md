@@ -4,11 +4,14 @@ layout: home
 hero:
   name: Laravel Slugify
   text: Clean, automatic slugs for Eloquent
-  tagline: A tiny trait that gives your models clean, automatic slugs — without setup, ceremony, or extra weight.
+  tagline: Clean, automatic slugs from a single PHP attribute — the trait is optional, the defaults are sensible.
   actions:
     - theme: brand
       text: Get Started
       link: /guide/getting-started
+    - theme: alt
+      text: Why Laravel Slugify?
+      link: /guide/why
     - theme: alt
       text: View on GitHub
       link: https://github.com/oliwol/laravel-slugify
@@ -16,7 +19,10 @@ hero:
 features:
   - icon: 🏷️
     title: "#[Slugify] Attribute"
-    details: Configure slug generation with a simple PHP attribute — no boilerplate, no config files.
+    details: Configure slug generation with a single PHP attribute — no trait required. Reach for the fluent SlugConfig API when you need closures.
+  - icon: 🔗
+    title: ID-Anchored URLs
+    details: Opt into appendId for self-healing /post-5 style URLs that survive slug changes with a 308 canonical redirect.
   - icon: 🔢
     title: Unique Slugs
     details: Automatic uniqueness with intelligent incrementing (my-post, my-post-2, my-post-3).

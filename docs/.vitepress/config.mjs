@@ -23,12 +23,13 @@ export default defineConfig({
       {
         text: 'Guide',
         items: [
+          { text: 'Why Laravel Slugify?', link: '/guide/why' },
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Features', link: '/guide/features' },
           { text: 'ID-Anchored Slugs', link: '/guide/id-anchored-slugs' },
-          { text: 'Upgrading (v1 → v2)', link: '/guide/upgrading' },
           { text: 'Migrating from Spatie', link: '/guide/migrating-from-spatie' },
+          { text: 'Upgrading (v1 → v2)', link: '/guide/upgrading' },
         ],
       },
       {
