@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Oliwol\Slugify\HasSlugHistory;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,6 +20,10 @@ final class SlugRedirectMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $route = $request->route();
+
+        if (! $route instanceof Route) {
+            return $next($request);
+        }
 
         foreach ($route->parameters() as $paramName => $model) {
             if (! $model instanceof Model) {
