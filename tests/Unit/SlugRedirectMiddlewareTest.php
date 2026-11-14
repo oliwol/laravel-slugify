@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
+use Oliwol\Slugify\Http\Middleware\SlugRedirectMiddleware;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Models\PostWithSlugHistory;
 use Tests\Models\UserWithAttribute;
 
@@ -67,4 +70,13 @@ it('uses the configured redirect status code', function (): void {
     $this->get('/posts/hello-world')
         ->assertRedirect('/posts/updated-title')
         ->assertStatus(302);
+});
+
+it('passes through when the request has no route', function (): void {
+    $response = (new SlugRedirectMiddleware)->handle(
+        Request::create('/posts/hello-world'),
+        fn (): Response => response('passed'),
+    );
+
+    expect($response->getContent())->toBe('passed');
 });
